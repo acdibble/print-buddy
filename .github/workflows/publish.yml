@@ -15,7 +15,7 @@ jobs:
     timeout-minutes: 10
 
     permissions:
-      contents: write
+      contents: read
       id-token: write
 
     steps:
@@ -51,12 +51,6 @@ jobs:
 
       - run: pnpm test
         if: steps.version.outputs.changed == 'true'
-
-      - name: Create and push tag
-        if: steps.version.outputs.changed == 'true'
-        run: |
-          git tag "v${{ steps.version.outputs.version }}"
-          git push origin "v${{ steps.version.outputs.version }}"
 
       - run: pnpm publish --no-git-checks
         if: steps.version.outputs.changed == 'true'
