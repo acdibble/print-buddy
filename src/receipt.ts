@@ -5,6 +5,9 @@ export type Node =
   | { kind: 'text'; value: string }
   | { kind: 'bold'; child: Node }
   | { kind: 'underline'; child: Node }
+  | { kind: 'left'; child: Node }
+  | { kind: 'center'; child: Node }
+  | { kind: 'right'; child: Node }
   | { kind: 'line'; child: Node }
   | { kind: 'blank'; count: number }
   | { kind: 'table'; headers: [string, string]; rows: [string, string][] }
@@ -28,6 +31,27 @@ export function bold(content: string | Node): Node {
  */
 export function underline(content: string | Node): Node {
   return { kind: 'underline', child: toNode(content) };
+}
+
+/**
+ * Left-align content
+ */
+export function left(content: string | Node): Node {
+  return { kind: 'left', child: toNode(content) };
+}
+
+/**
+ * Center-align content
+ */
+export function center(content: string | Node): Node {
+  return { kind: 'center', child: toNode(content) };
+}
+
+/**
+ * Right-align content
+ */
+export function right(content: string | Node): Node {
+  return { kind: 'right', child: toNode(content) };
 }
 
 /**

@@ -14,7 +14,7 @@ export {
 export { PrinterModel, PaperWidth, getUsbProfile } from './printer-model';
 
 // Receipt builder exports
-export { Receipt, Node, bold, underline } from './receipt';
+export { Receipt, Node, bold, underline, left, center, right } from './receipt';
 
 // ESC/POS command constants
 export {
@@ -31,6 +31,9 @@ export {
   BITMAP,
   LINE_SPACING_0,
   LINE_SPACING_RESET,
+  ALIGN_LEFT,
+  ALIGN_CENTER,
+  ALIGN_RIGHT,
 } from './command';
 export { Font, fontToBytes } from './font';
 export { Charset, charsetToBytes } from './charset';

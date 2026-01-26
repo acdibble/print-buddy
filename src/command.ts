@@ -36,3 +36,12 @@ export const LINE_SPACING_0 = new Uint8Array([0x1b, 0x33, 0x00]);
 
 /** Reset line spacing (ESC 2) */
 export const LINE_SPACING_RESET = new Uint8Array([0x1b, 0x32]);
+
+/** Left justify (ESC a 0) */
+export const ALIGN_LEFT = new Uint8Array([0x1b, 0x61, 0x00]);
+
+/** Center justify (ESC a 1) */
+export const ALIGN_CENTER = new Uint8Array([0x1b, 0x61, 0x01]);
+
+/** Right justify (ESC a 2) */
+export const ALIGN_RIGHT = new Uint8Array([0x1b, 0x61, 0x02]);

@@ -2,7 +2,7 @@ import * as usb from 'usb';
 import * as iconv from 'iconv-lite';
 import { PrinterConnection } from './printer-connection';
 import { Node } from '../receipt';
-import { BOLD_ON, BOLD_OFF, UNDERLINE_1DOT, UNDERLINE_OFF, FEED, CUT, PARTIAL_CUT } from '../command';
+import { BOLD_ON, BOLD_OFF, UNDERLINE_1DOT, UNDERLINE_OFF, FEED, CUT, PARTIAL_CUT, ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT } from '../command';
 import { NoBulkEndpointError, UsbError } from '../errors';
 
 function deferred<T>(): {
@@ -148,6 +148,24 @@ export class UsbConnection extends PrinterConnection {
     await this.write(UNDERLINE_1DOT);
     await this.visit(child);
     await this.write(UNDERLINE_OFF);
+  }
+
+  protected async visitLeft(child: Node): Promise<void> {
+    await this.write(ALIGN_LEFT);
+    await this.visit(child);
+    await this.write(ALIGN_LEFT);
+  }
+
+  protected async visitCenter(child: Node): Promise<void> {
+    await this.write(ALIGN_CENTER);
+    await this.visit(child);
+    await this.write(ALIGN_LEFT);
+  }
+
+  protected async visitRight(child: Node): Promise<void> {
+    await this.write(ALIGN_RIGHT);
+    await this.visit(child);
+    await this.write(ALIGN_LEFT);
   }
 
   protected async visitLine(child: Node): Promise<void> {

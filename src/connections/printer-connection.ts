@@ -39,6 +39,15 @@ export abstract class PrinterConnection {
       case 'underline':
         await this.visitUnderline(node.child);
         break;
+      case 'left':
+        await this.visitLeft(node.child);
+        break;
+      case 'center':
+        await this.visitCenter(node.child);
+        break;
+      case 'right':
+        await this.visitRight(node.child);
+        break;
       case 'line':
         await this.visitLine(node.child);
         break;
@@ -63,6 +72,9 @@ export abstract class PrinterConnection {
   protected abstract visitText(value: string): Promise<void>;
   protected abstract visitBold(child: Node): Promise<void>;
   protected abstract visitUnderline(child: Node): Promise<void>;
+  protected abstract visitLeft(child: Node): Promise<void>;
+  protected abstract visitCenter(child: Node): Promise<void>;
+  protected abstract visitRight(child: Node): Promise<void>;
   protected abstract visitLine(child: Node): Promise<void>;
   protected abstract visitBlank(count: number): Promise<void>;
   protected abstract visitTable(

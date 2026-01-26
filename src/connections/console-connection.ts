@@ -34,6 +34,40 @@ export class ConsoleConnection extends PrinterConnection {
     process.stdout.write(ANSI.reset);
   }
 
+  protected async visitLeft(child: Node): Promise<void> {
+    await this.visit(child);
+  }
+
+  protected async visitCenter(child: Node): Promise<void> {
+    const text = this.extractText(child);
+    const padding = Math.max(0, Math.floor((this.width - text.length) / 2));
+    process.stdout.write(' '.repeat(padding));
+    await this.visit(child);
+  }
+
+  protected async visitRight(child: Node): Promise<void> {
+    const text = this.extractText(child);
+    const padding = Math.max(0, this.width - text.length);
+    process.stdout.write(' '.repeat(padding));
+    await this.visit(child);
+  }
+
+  private extractText(node: Node): string {
+    switch (node.kind) {
+      case 'text':
+        return node.value;
+      case 'bold':
+      case 'underline':
+      case 'left':
+      case 'center':
+      case 'right':
+      case 'line':
+        return this.extractText(node.child);
+      default:
+        return '';
+    }
+  }
+
   protected async visitLine(child: Node): Promise<void> {
     await this.visit(child);
     process.stdout.write('\n');
