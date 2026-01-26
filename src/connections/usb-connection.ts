@@ -1,9 +1,9 @@
 import * as usb from 'usb';
 import * as iconv from 'iconv-lite';
-import { PrinterConnection } from './printer-connection';
-import { Node } from '../receipt';
-import { BOLD_ON, BOLD_OFF, UNDERLINE_1DOT, UNDERLINE_OFF, FEED, CUT, PARTIAL_CUT, ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT } from '../command';
-import { NoBulkEndpointError, UsbError } from '../errors';
+import { PrinterConnection } from './printer-connection.js';
+import { Node } from '../receipt.js';
+import { BOLD_ON, BOLD_OFF, UNDERLINE_1DOT, UNDERLINE_OFF, FEED, CUT, PARTIAL_CUT, ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT } from '../command.js';
+import { NoBulkEndpointError, UsbError } from '../errors.js';
 
 function deferred<T>(): {
   promise: Promise<T>;

@@ -1,4 +1,4 @@
-import { Printer, createConsoleProfile, Receipt, bold, underline } from './src';
+import { Printer, createConsoleProfile, Receipt, bold, underline } from './src/index.js';
 
 async function main() {
   // Test with console output (no hardware needed)
@@ -25,7 +25,7 @@ async function main() {
         ['Milk', '5.00'],
         ['Cereal', '10.00'],
         ['Bread', '3.50'],
-      ]
+      ],
     )
     .blank()
     .line('Thank you!')

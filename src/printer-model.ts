@@ -1,4 +1,4 @@
-import { PrinterProfile, createUsbProfile } from './printer-profile';
+import { PrinterProfile, createUsbProfile } from './printer-profile.js';
 
 const PRINTER_USB_IDS = {
   'TMT20III': { vendorId: 0x04b8, productId: 0x0e28 },

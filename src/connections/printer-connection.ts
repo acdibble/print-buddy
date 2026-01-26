@@ -1,5 +1,5 @@
-import { Node, Receipt } from '../receipt';
-import { Formatter } from '../formatter';
+import { Node, Receipt } from '../receipt.js';
+import { Formatter } from '../formatter.js';
 
 /**
  * Abstract base class for printer connections with visitor pattern

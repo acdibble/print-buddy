@@ -1,7 +1,7 @@
-import { PrinterConnection, UsbConnection, ConsoleConnection } from './connections';
-import { PrinterProfile } from './printer-profile';
-import { NoFontFoundError } from './errors';
-import { Receipt } from './receipt';
+import { PrinterConnection, UsbConnection, ConsoleConnection } from './connections/index.js';
+import { PrinterProfile } from './printer-profile.js';
+import { NoFontFoundError } from './errors.js';
+import { Receipt } from './receipt.js';
 
 /**
  * Main printer class

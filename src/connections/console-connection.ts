@@ -1,5 +1,5 @@
-import { PrinterConnection } from './printer-connection';
-import { Node } from '../receipt';
+import { PrinterConnection } from './printer-connection.js';
+import { Node } from '../receipt.js';
 
 const ANSI = {
   reset: '\x1b[0m',

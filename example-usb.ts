@@ -1,4 +1,4 @@
-import { Printer, getUsbProfile, Receipt, bold, center } from './src';
+import { Printer, getUsbProfile, Receipt, bold, center } from './src/index.js';
 
 async function main() {
   console.log('Attempting to connect to Epson TM-T20III printer...');
