@@ -217,11 +217,16 @@ export class UsbConnection extends PrinterConnection {
    */
   async close(): Promise<void> {
     if (this.interface) {
-      try {
-        this.interface.release();
-      } catch (err) {
-        // Ignore release errors
-      }
+      const iface = this.interface;
+      this.interface = null;
+      this.endpoint = null;
+
+      await new Promise<void>((resolve) => {
+        iface.release(true, (err) => {
+          // Ignore release errors, resolve regardless
+          resolve();
+        });
+      });
     }
 
     try {
