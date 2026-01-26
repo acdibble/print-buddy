@@ -2,8 +2,8 @@ name: Publish
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches: [main]
+    paths: [package.json]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -15,24 +15,48 @@ jobs:
     timeout-minutes: 10
 
     permissions:
-      contents: read
+      contents: write
       id-token: write
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check if version changed
+        id: version
+        run: |
+          OLD_VERSION=$(git show HEAD~1:package.json | jq -r '.version')
+          NEW_VERSION=$(jq -r '.version' package.json)
+          if [ "$OLD_VERSION" != "$NEW_VERSION" ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          fi
 
       - uses: pnpm/action-setup@v4
+        if: steps.version.outputs.changed == 'true'
 
       - uses: actions/setup-node@v4
+        if: steps.version.outputs.changed == 'true'
         with:
           node-version-file: .nvmrc
           cache: pnpm
           registry-url: https://registry.npmjs.org
 
       - run: pnpm install --frozen-lockfile
+        if: steps.version.outputs.changed == 'true'
 
       - run: pnpm typecheck
+        if: steps.version.outputs.changed == 'true'
 
       - run: pnpm test
+        if: steps.version.outputs.changed == 'true'
+
+      - name: Create and push tag
+        if: steps.version.outputs.changed == 'true'
+        run: |
+          git tag "v${{ steps.version.outputs.version }}"
+          git push origin "v${{ steps.version.outputs.version }}"
 
       - run: pnpm publish --no-git-checks
+        if: steps.version.outputs.changed == 'true'
