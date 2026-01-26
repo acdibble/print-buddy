@@ -12,25 +12,22 @@ export type Node =
   | { kind: 'cut' }
   | { kind: 'partialCut' };
 
-/**
- * Create a text node
- */
-export function text(value: string): Node {
-  return { kind: 'text', value };
+function toNode(content: string | Node): Node {
+  return typeof content === 'string' ? { kind: 'text', value: content } : content;
 }
 
 /**
- * Wrap a node in bold styling
+ * Wrap content in bold styling
  */
-export function bold(child: Node): Node {
-  return { kind: 'bold', child };
+export function bold(content: string | Node): Node {
+  return { kind: 'bold', child: toNode(content) };
 }
 
 /**
- * Wrap a node in underline styling
+ * Wrap content in underline styling
  */
-export function underline(child: Node): Node {
-  return { kind: 'underline', child };
+export function underline(content: string | Node): Node {
+  return { kind: 'underline', child: toNode(content) };
 }
 
 /**
@@ -38,22 +35,22 @@ export function underline(child: Node): Node {
  *
  * @example
  * const receipt = new Receipt()
- *   .line(bold(text('Store Name')))
- *   .line(underline(text('Order #12345')))
+ *   .line(bold('Store Name'))
+ *   .line(underline('Order #12345'))
  *   .blank()
  *   .table(['Item', 'Price'], [['Coffee', '$3.50']])
  *   .cut();
  *
- * await connection.print(receipt);
+ * await printer.print(receipt);
  */
 export class Receipt {
   private _nodes: Node[] = [];
 
   /**
-   * Add a line node (prints content followed by newline)
+   * Add a line (prints content followed by newline)
    */
-  line(child: Node): this {
-    this._nodes.push({ kind: 'line', child });
+  line(content: string | Node): this {
+    this._nodes.push({ kind: 'line', child: toNode(content) });
     return this;
   }
 

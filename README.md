@@ -11,24 +11,24 @@ pnpm add print-buddy
 ## Quick Start
 
 ```typescript
-import { Printer, createConsoleProfile, Receipt, text, bold, underline } from 'print-buddy';
+import { Printer, createConsoleProfile, Receipt, bold, underline } from 'print-buddy';
 
 const printer = await Printer.create(createConsoleProfile());
 
 const receipt = new Receipt()
-  .line(bold(text('COFFEE SHOP')))
-  .line(text('123 Main Street'))
+  .line(bold('COFFEE SHOP'))
+  .line('123 Main Street')
   .blank()
-  .line(underline(text('Order #12345')))
+  .line(underline('Order #12345'))
   .blank()
   .table(['Item', 'Price'], [
     ['Latte', '$4.50'],
     ['Croissant', '$3.25'],
   ])
   .blank()
-  .line(bold(underline(text('Total: $7.75'))))
+  .line(bold(underline('Total: $7.75')))
   .blank()
-  .line(text('Thank you!'))
+  .line('Thank you!')
   .cut();
 
 await printer.print(receipt);
@@ -38,7 +38,7 @@ await printer.close();
 ## USB Printer
 
 ```typescript
-import { Printer, getUsbProfile, Receipt, text, bold } from 'print-buddy';
+import { Printer, getUsbProfile, Receipt, bold } from 'print-buddy';
 
 // Use a preset printer model
 const printer = await Printer.create(getUsbProfile('TMT20III'));
@@ -67,15 +67,15 @@ const receipt = new Receipt()
   .partialCut();     // Partial paper cut
 ```
 
-### Text Nodes
+### Styling
 
-Nodes are composable - wrap them to combine styles:
+Styles are composable - pass strings or wrap nodes to combine:
 
 ```typescript
-text('Hello')                      // Plain text
-bold(text('Hello'))                // Bold text
-underline(text('Hello'))           // Underlined text
-bold(underline(text('Hello')))     // Bold + underlined
+'Hello'                    // Plain text (string)
+bold('Hello')              // Bold text
+underline('Hello')         // Underlined text
+bold(underline('Hello'))   // Bold + underlined
 ```
 
 ### Printer Profiles

@@ -1,4 +1,4 @@
-import { Printer, createConsoleProfile, Receipt, text, bold, underline } from './src';
+import { Printer, createConsoleProfile, Receipt, bold, underline } from './src';
 
 async function main() {
   // Test with console output (no hardware needed)
@@ -13,11 +13,11 @@ async function main() {
   console.log('=== Console Printer Test ===\n');
 
   const receipt = new Receipt()
-    .line(text('Hello World!'))
-    .line(text('This is a test receipt.'))
+    .line('Hello World!')
+    .line('This is a test receipt.')
     .blank()
-    .line(bold(text('Bold text')))
-    .line(underline(text('Underlined text')))
+    .line(bold('Bold text'))
+    .line(underline('Underlined text'))
     .blank()
     .table(
       ['Product', 'Price'],
@@ -28,7 +28,7 @@ async function main() {
       ]
     )
     .blank()
-    .line(text('Thank you!'))
+    .line('Thank you!')
     .cut();
 
   await printer.print(receipt);

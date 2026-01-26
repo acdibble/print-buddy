@@ -14,7 +14,7 @@ export {
 export { PrinterModel, PaperWidth, getUsbProfile } from './printer-model';
 
 // Receipt builder exports
-export { Receipt, Node, text, bold, underline } from './receipt';
+export { Receipt, Node, bold, underline } from './receipt';
 
 // ESC/POS command constants
 export {

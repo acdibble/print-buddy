@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { Receipt, text, bold, underline } from '../receipt';
+import { Receipt, bold, underline } from '../receipt';
 
 // Capture all bytes written to the mock endpoint
 let writtenBytes: number[] = [];
@@ -38,7 +38,7 @@ describe('UsbConnection', () => {
 
   it('renders plain text', async () => {
     const conn = await UsbConnection.open(0x04b8, 0x0e28, undefined, 2000, 32);
-    const receipt = new Receipt().line(text('Hello'));
+    const receipt = new Receipt().line('Hello');
 
     await conn!.print(receipt);
 
@@ -47,7 +47,7 @@ describe('UsbConnection', () => {
 
   it('renders bold text with ESC/POS commands', async () => {
     const conn = await UsbConnection.open(0x04b8, 0x0e28, undefined, 2000, 32);
-    const receipt = new Receipt().line(bold(text('Bold')));
+    const receipt = new Receipt().line(bold('Bold'));
 
     await conn!.print(receipt);
 
@@ -56,7 +56,7 @@ describe('UsbConnection', () => {
 
   it('renders underline text with ESC/POS commands', async () => {
     const conn = await UsbConnection.open(0x04b8, 0x0e28, undefined, 2000, 32);
-    const receipt = new Receipt().line(underline(text('Underline')));
+    const receipt = new Receipt().line(underline('Underline'));
 
     await conn!.print(receipt);
 
@@ -65,7 +65,7 @@ describe('UsbConnection', () => {
 
   it('renders nested bold and underline', async () => {
     const conn = await UsbConnection.open(0x04b8, 0x0e28, undefined, 2000, 32);
-    const receipt = new Receipt().line(bold(underline(text('Both'))));
+    const receipt = new Receipt().line(bold(underline('Both')));
 
     await conn!.print(receipt);
 
@@ -74,7 +74,7 @@ describe('UsbConnection', () => {
 
   it('renders full cut command', async () => {
     const conn = await UsbConnection.open(0x04b8, 0x0e28, undefined, 2000, 32);
-    const receipt = new Receipt().line(text('Test')).cut();
+    const receipt = new Receipt().line('Test').cut();
 
     await conn!.print(receipt);
 
@@ -83,7 +83,7 @@ describe('UsbConnection', () => {
 
   it('renders partial cut command', async () => {
     const conn = await UsbConnection.open(0x04b8, 0x0e28, undefined, 2000, 32);
-    const receipt = new Receipt().line(text('Test')).partialCut();
+    const receipt = new Receipt().line('Test').partialCut();
 
     await conn!.print(receipt);
 
@@ -92,7 +92,7 @@ describe('UsbConnection', () => {
 
   it('renders feed command', async () => {
     const conn = await UsbConnection.open(0x04b8, 0x0e28, undefined, 2000, 32);
-    const receipt = new Receipt().line(text('Test')).feed();
+    const receipt = new Receipt().line('Test').feed();
 
     await conn!.print(receipt);
 
@@ -102,14 +102,14 @@ describe('UsbConnection', () => {
   it('renders complete receipt', async () => {
     const conn = await UsbConnection.open(0x04b8, 0x0e28, undefined, 2000, 32);
     const receipt = new Receipt()
-      .line(bold(text('STORE NAME')))
-      .line(text('123 Main St'))
+      .line(bold('STORE NAME'))
+      .line('123 Main St')
       .blank()
-      .line(underline(text('Order #123')))
+      .line(underline('Order #123'))
       .blank()
       .table(['Item', 'Price'], [['Coffee', '$3.50'], ['Muffin', '$2.00']])
       .blank()
-      .line(bold(underline(text('Total: $5.50'))))
+      .line(bold(underline('Total: $5.50')))
       .cut();
 
     await conn!.print(receipt);

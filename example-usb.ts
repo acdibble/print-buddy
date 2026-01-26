@@ -1,4 +1,4 @@
-import { Printer, getUsbProfile, Receipt, text, bold, underline } from './src';
+import { Printer, getUsbProfile, Receipt, bold, underline } from './src';
 
 async function main() {
   console.log('Attempting to connect to Epson TM-T20III printer...');
@@ -15,12 +15,12 @@ async function main() {
 
   try {
     const receipt = new Receipt()
-      .line(text('================================'))
-      .line(text('        TEST RECEIPT'))
-      .line(text('================================'))
+      .line('================================')
+      .line('        TEST RECEIPT')
+      .line('================================')
       .blank()
-      .line(bold(text('Bold Text Test')))
-      .line(text('Normal text'))
+      .line(bold('Bold Text Test'))
+      .line('Normal text')
       .blank()
       .table(
         ['Item', 'Price'],
@@ -31,7 +31,7 @@ async function main() {
         ]
       )
       .blank()
-      .line(text('Thank you for testing!'))
+      .line('Thank you for testing!')
       .blank()
       .cut();
 
