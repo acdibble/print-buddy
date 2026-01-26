@@ -1,0 +1,40 @@
+{
+  "name": "print-buddy",
+  "version": "0.1.0",
+  "description": "ESC/POS thermal printer library for Node.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "pnpm run build",
+    "example": "tsx example.ts",
+    "example:usb": "tsx example-usb.ts",
+    "example:receipt": "tsx src/example-receipt.ts"
+  },
+  "keywords": [
+    "print-buddy",
+    "escpos",
+    "thermal-printer",
+    "pos",
+    "receipt",
+    "usb"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "iconv-lite": "^0.6.3",
+    "usb": "^2.11.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.0.0",
+    "vitest": "^4.0.18"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
