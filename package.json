@@ -1,6 +1,6 @@
 {
   "name": "print-buddy",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "ESC/POS thermal printer library for Node.js",
   "type": "module",
   "main": "dist/index.js",
