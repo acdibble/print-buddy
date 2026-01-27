@@ -1,9 +1,21 @@
-import * as usb from 'usb';
 import iconv from 'iconv-lite';
-import { PrinterConnection } from './printer-connection.js';
-import { Node } from '../receipt.js';
-import { BOLD_ON, BOLD_OFF, UNDERLINE_1DOT, UNDERLINE_OFF, FEED, CUT, PARTIAL_CUT, ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT } from '../command.js';
+import * as usb from 'usb';
+
+import {
+  ALIGN_CENTER,
+  ALIGN_LEFT,
+  ALIGN_RIGHT,
+  BOLD_OFF,
+  BOLD_ON,
+  CUT,
+  FEED,
+  PARTIAL_CUT,
+  UNDERLINE_1DOT,
+  UNDERLINE_OFF,
+} from '../command.js';
 import { NoBulkEndpointError, UsbError } from '../errors.js';
+import { Node } from '../receipt.js';
+import { PrinterConnection } from './printer-connection.js';
 
 function deferred<T>(): {
   promise: Promise<T>;
@@ -72,20 +84,17 @@ export class UsbConnection extends PrinterConnection {
     try {
       this.device.open();
     } catch (err) {
-      throw new UsbError(`Failed to open device: ${err}`);
+      throw new UsbError(`Failed to open device: ${String(err)}`);
     }
 
     // Find and claim interface 0
     this.interface = this.device.interface(0);
-    if (!this.interface) {
-      throw new UsbError('Interface 0 not found');
-    }
 
     // Check if kernel driver is active and detach if needed
     if (this.interface.isKernelDriverActive()) {
       try {
         this.interface.detachKernelDriver();
-      } catch (err) {
+      } catch {
         // Ignore errors, some platforms don't support this
       }
     }
@@ -93,7 +102,7 @@ export class UsbConnection extends PrinterConnection {
     try {
       this.interface.claim();
     } catch (err) {
-      throw new UsbError(`Failed to claim interface: ${err}`);
+      throw new UsbError(`Failed to claim interface: ${String(err)}`);
     }
 
     // Find bulk OUT endpoint
@@ -111,7 +120,7 @@ export class UsbConnection extends PrinterConnection {
     // Get the endpoint object
     const ep = this.interface.endpoint(actualEndpoint);
     if (!ep || ep.direction !== 'out') {
-      throw new UsbError(`Endpoint ${actualEndpoint} is not a valid OUT endpoint`);
+      throw new UsbError(`Endpoint ${String(actualEndpoint)} is not a valid OUT endpoint`);
     }
     this.endpoint = ep as usb.OutEndpoint;
   }
@@ -206,7 +215,7 @@ export class UsbConnection extends PrinterConnection {
       if (err) {
         reject(new UsbError(`Transfer failed: ${err.message}`));
       } else {
-        resolve();
+        resolve(undefined);
       }
     });
     return promise;
@@ -222,8 +231,7 @@ export class UsbConnection extends PrinterConnection {
       this.endpoint = null;
 
       await new Promise<void>((resolve) => {
-        iface.release(true, (err) => {
-          // Ignore release errors, resolve regardless
+        iface.release(true, () => {
           resolve();
         });
       });
@@ -231,7 +239,7 @@ export class UsbConnection extends PrinterConnection {
 
     try {
       this.device.close();
-    } catch (err) {
+    } catch {
       // Ignore close errors
     }
   }

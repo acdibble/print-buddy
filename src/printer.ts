@@ -1,6 +1,6 @@
-import { PrinterConnection, UsbConnection, ConsoleConnection } from './connections/index.js';
-import { PrinterProfile } from './printer-profile.js';
+import { ConsoleConnection, PrinterConnection, UsbConnection } from './connections/index.js';
 import { NoFontFoundError } from './errors.js';
+import { PrinterProfile } from './printer-profile.js';
 import { Receipt } from './receipt.js';
 
 /**
@@ -40,7 +40,13 @@ export class Printer {
     switch (profile.connectionData.type) {
       case 'usb': {
         const { vendorId, productId, endpoint, timeout } = profile.connectionData;
-        const usbConn = await UsbConnection.open(vendorId, productId, endpoint, timeout, fontAWidth);
+        const usbConn = await UsbConnection.open(
+          vendorId,
+          productId,
+          endpoint,
+          timeout,
+          fontAWidth,
+        );
         if (!usbConn) {
           return null;
         }

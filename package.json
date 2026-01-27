@@ -14,13 +14,15 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
     "clean": "rm -rf dist",
     "test": "vitest run",
     "test:watch": "vitest",
     "prepublishOnly": "pnpm run build",
     "example": "tsx example.ts",
     "example:usb": "tsx example-usb.ts",
-    "example:receipt": "tsx src/example-receipt.ts"
+    "example:receipt": "tsx src/example-receipt.ts",
+    "prepare": "husky"
   },
   "keywords": [
     "print-buddy",
@@ -49,13 +51,24 @@
     "usb": "^2.11.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.2",
     "@types/node": "^20.0.0",
+    "eslint": "^9.39.2",
+    "eslint-plugin-simple-import-sort": "^12.1.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
+    "prettier": "^3.8.1",
     "tsx": "^4.21.0",
     "typescript": "^5.0.0",
+    "typescript-eslint": "^8.54.0",
     "vitest": "^4.0.18"
   },
   "engines": {
     "node": ">=24.0.0"
   },
-  "packageManager": "pnpm@10.6.2"
+  "packageManager": "pnpm@10.6.2",
+  "lint-staged": {
+    "*.ts": "eslint",
+    "*.{ts,js,json,md,yml}": "prettier --write"
+  }
 }

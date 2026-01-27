@@ -1,5 +1,5 @@
-import { PrinterConnection } from './printer-connection.js';
 import { Node } from '../receipt.js';
+import { PrinterConnection } from './printer-connection.js';
 
 const ANSI = {
   reset: '\x1b[0m',
@@ -77,10 +77,7 @@ export class ConsoleConnection extends PrinterConnection {
     process.stdout.write('\n'.repeat(count));
   }
 
-  protected async visitTable(
-    headers: [string, string],
-    rows: [string, string][]
-  ): Promise<void> {
+  protected async visitTable(headers: [string, string], rows: [string, string][]): Promise<void> {
     const output = this.formatter.duoTable(headers, rows);
     process.stdout.write(output);
   }

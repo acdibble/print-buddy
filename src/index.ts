@@ -1,7 +1,7 @@
 // Printer
 export { Printer } from './printer.js';
-export { createUsbProfile, createConsoleProfile } from './printer-profile.js';
 export { getUsbProfile } from './printer-model.js';
+export { createConsoleProfile, createUsbProfile } from './printer-profile.js';
 
 // Receipt builder
-export { Receipt, bold, underline, left, center, right } from './receipt.js';
+export { bold, center, left, Receipt, right, underline } from './receipt.js';

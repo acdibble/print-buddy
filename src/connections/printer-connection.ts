@@ -1,5 +1,5 @@
-import { Node, Receipt } from '../receipt.js';
 import { Formatter } from '../formatter.js';
+import { Node, Receipt } from '../receipt.js';
 
 /**
  * Abstract base class for printer connections with visitor pattern
@@ -77,10 +77,7 @@ export abstract class PrinterConnection {
   protected abstract visitRight(child: Node): Promise<void>;
   protected abstract visitLine(child: Node): Promise<void>;
   protected abstract visitBlank(count: number): Promise<void>;
-  protected abstract visitTable(
-    headers: [string, string],
-    rows: [string, string][]
-  ): Promise<void>;
+  protected abstract visitTable(headers: [string, string], rows: [string, string][]): Promise<void>;
   protected abstract visitFeed(): Promise<void>;
   protected abstract visitCut(): Promise<void>;
   protected abstract visitPartialCut(): Promise<void>;

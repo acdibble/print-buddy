@@ -133,15 +133,12 @@ export class Formatter {
    *   [['Milk', '5.00'], ['Cereal', '10.00']]
    * );
    */
-  duoTable(
-    headers: [string, string],
-    rows: Array<[string, string]>
-  ): string {
+  duoTable(headers: [string, string], rows: Array<[string, string]>): string {
     const auxDuoTable = (
       first: string,
       second: string,
       width: number,
-      replaceLast?: string
+      replaceLast?: string,
     ): string => {
       let col1 = first;
       let col2 = second;
@@ -197,10 +194,7 @@ export class Formatter {
    *   [['Milk', '5.00', '3'], ['Cereal', '10.00', '1']]
    * );
    */
-  trioTable(
-    headers: [string, string, string],
-    rows: Array<[string, string, string]>
-  ): string {
+  trioTable(headers: [string, string, string], rows: Array<[string, string, string]>): string {
     // Find max widths
     let maxLeft = headers[0].length;
     let maxMiddle = headers[1].length;
@@ -241,7 +235,7 @@ export class Formatter {
       third: string,
       width: number,
       limits: [number, number],
-      replaceLast?: string
+      replaceLast?: string,
     ): string => {
       let col1 = first;
       let col2 = second;
@@ -249,44 +243,30 @@ export class Formatter {
 
       const maxWidth1 = limits[0] - 1;
       if (col1.length > maxWidth1) {
-        col1 = replaceLast
-          ? col1.slice(0, maxWidth1) + replaceLast
-          : col1.slice(0, maxWidth1);
+        col1 = replaceLast ? col1.slice(0, maxWidth1) + replaceLast : col1.slice(0, maxWidth1);
       }
 
       const maxWidth2 = limits[1] - limits[0];
       if (col2.length > maxWidth2) {
-        col2 = replaceLast
-          ? col2.slice(0, maxWidth2) + replaceLast
-          : col2.slice(0, maxWidth2);
+        col2 = replaceLast ? col2.slice(0, maxWidth2) + replaceLast : col2.slice(0, maxWidth2);
       }
 
       const maxWidth3 = width - limits[1];
       if (col3.length - 1 > maxWidth3) {
-        col3 = replaceLast
-          ? col3.slice(0, maxWidth3) + replaceLast
-          : col3.slice(0, maxWidth3);
+        col3 = replaceLast ? col3.slice(0, maxWidth3) + replaceLast : col3.slice(0, maxWidth3);
       }
 
       // Format: left-aligned, centered, right-aligned
       const col1Padded = col1.padEnd(limits[0] - 1);
       const col2Width = limits[1] - limits[0];
-      const col2Padded = col2
-        .padStart(Math.floor((col2Width + col2.length) / 2))
-        .padEnd(col2Width);
+      const col2Padded = col2.padStart(Math.floor((col2Width + col2.length) / 2)).padEnd(col2Width);
       const col3Width = width - limits[1] - 1;
       const col3Padded = col3.padStart(col3Width);
 
       return col1Padded + ' ' + col2Padded + ' ' + col3Padded + '\n';
     };
 
-    let content = auxTrioTable(
-      headers[0],
-      headers[1],
-      headers[2],
-      this.width,
-      limits
-    );
+    let content = auxTrioTable(headers[0], headers[1], headers[2], this.width, limits);
 
     const hdp = this.printHeaderDivisionPattern();
     if (hdp) {

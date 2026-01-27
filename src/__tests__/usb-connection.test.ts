@@ -107,7 +107,13 @@ describe('UsbConnection', () => {
       .blank()
       .line(underline('Order #123'))
       .blank()
-      .table(['Item', 'Price'], [['Coffee', '$3.50'], ['Muffin', '$2.00']])
+      .table(
+        ['Item', 'Price'],
+        [
+          ['Coffee', '$3.50'],
+          ['Muffin', '$2.00'],
+        ],
+      )
       .blank()
       .line(bold(underline('Total: $5.50')))
       .cut();
