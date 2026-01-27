@@ -1,5 +1,5 @@
 import * as usb from 'usb';
-import * as iconv from 'iconv-lite';
+import iconv from 'iconv-lite';
 import { PrinterConnection } from './printer-connection.js';
 import { Node } from '../receipt.js';
 import { BOLD_ON, BOLD_OFF, UNDERLINE_1DOT, UNDERLINE_OFF, FEED, CUT, PARTIAL_CUT, ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT } from '../command.js';
