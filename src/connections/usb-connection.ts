@@ -10,6 +10,7 @@ import {
   CUT,
   FEED,
   PARTIAL_CUT,
+  RESET,
   UNDERLINE_1DOT,
   UNDERLINE_OFF,
 } from '../command.js';
@@ -162,24 +163,22 @@ export class UsbConnection extends PrinterConnection {
   protected async visitLeft(child: Node): Promise<void> {
     await this.write(ALIGN_LEFT);
     await this.visit(child);
-    await this.write(ALIGN_LEFT);
   }
 
   protected async visitCenter(child: Node): Promise<void> {
     await this.write(ALIGN_CENTER);
     await this.visit(child);
-    await this.write(ALIGN_LEFT);
   }
 
   protected async visitRight(child: Node): Promise<void> {
     await this.write(ALIGN_RIGHT);
     await this.visit(child);
-    await this.write(ALIGN_LEFT);
   }
 
   protected async visitLine(child: Node): Promise<void> {
     await this.visit(child);
     await this.write(this.encode('\n'));
+    await this.write(ALIGN_LEFT); // Reset alignment after line is flushed
   }
 
   protected async visitBlank(count: number): Promise<void> {
@@ -201,6 +200,11 @@ export class UsbConnection extends PrinterConnection {
 
   protected async visitPartialCut(): Promise<void> {
     await this.write(PARTIAL_CUT);
+  }
+
+  protected async reset(): Promise<void> {
+    await this.write(RESET);
+    await this.write(ALIGN_LEFT);
   }
 
   private async write(data: Uint8Array): Promise<void> {

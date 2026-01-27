@@ -19,9 +19,6 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "prepublishOnly": "pnpm run build",
-    "example": "tsx example.ts",
-    "example:usb": "tsx example-usb.ts",
-    "example:receipt": "tsx src/example-receipt.ts",
     "prepare": "husky"
   },
   "keywords": [

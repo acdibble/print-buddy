@@ -20,10 +20,17 @@ export abstract class PrinterConnection {
    * Print a receipt by visiting each node
    */
   async print(receipt: Receipt): Promise<void> {
+    await this.reset();
     for (const node of receipt.nodes()) {
       await this.visit(node);
     }
+    await this.reset();
   }
+
+  /**
+   * Reset printer to default state
+   */
+  protected abstract reset(): Promise<void>;
 
   /**
    * Visit a node and dispatch to the appropriate handler

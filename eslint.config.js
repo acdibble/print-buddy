@@ -23,6 +23,6 @@ export default tseslint.config(
     },
   },
   {
-    ignores: ['dist', 'node_modules', '*.js', 'src/__tests__'],
+    ignores: ['dist', 'node_modules', '*.js', 'src/__tests__', 'examples'],
   },
 );

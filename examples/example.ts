@@ -1,4 +1,4 @@
-import { Printer, createConsoleProfile, Receipt, bold, underline } from './src/index.js';
+import { bold, createConsoleProfile, Printer, Receipt, underline } from '../src/index.js';
 
 async function main() {
   // Test with console output (no hardware needed)

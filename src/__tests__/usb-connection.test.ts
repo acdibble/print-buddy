@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { Receipt, bold, underline } from '../receipt';
+import { Receipt, bold, underline, center, left, right } from '../receipt';
 
 // Capture all bytes written to the mock endpoint
 let writtenBytes: number[] = [];
@@ -93,6 +93,24 @@ describe('UsbConnection', () => {
   it('renders feed command', async () => {
     const conn = await UsbConnection.open(0x04b8, 0x0e28, undefined, 2000, 32);
     const receipt = new Receipt().line('Test').feed();
+
+    await conn!.print(receipt);
+
+    expect(writtenBytes).toMatchSnapshot();
+  });
+
+  it('renders centered text', async () => {
+    const conn = await UsbConnection.open(0x04b8, 0x0e28, undefined, 2000, 32);
+    const receipt = new Receipt().line(center('Centered')).line('Left aligned');
+
+    await conn!.print(receipt);
+
+    expect(writtenBytes).toMatchSnapshot();
+  });
+
+  it('renders right aligned text', async () => {
+    const conn = await UsbConnection.open(0x04b8, 0x0e28, undefined, 2000, 32);
+    const receipt = new Receipt().line(right('Right')).line('Left');
 
     await conn!.print(receipt);
 
