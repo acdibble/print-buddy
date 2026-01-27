@@ -30,8 +30,20 @@
     "receipt",
     "usb"
   ],
-  "author": "",
+  "author": "Andrew Dibble <andrew@dibble.codes>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/acdibble/print-buddy"
+  },
+  "bugs": {
+    "url": "https://github.com/acdibble/print-buddy/issues"
+  },
+  "homepage": "https://github.com/acdibble/print-buddy#readme",
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
   "dependencies": {
     "iconv-lite": "^0.6.3",
     "usb": "^2.11.0"
