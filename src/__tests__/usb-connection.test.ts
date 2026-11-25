@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { Receipt, bold, underline, center, left, right } from '../receipt';
+import { Receipt, bold, underline } from '../receipt';
 
 // Capture all bytes written to the mock endpoint
 let writtenBytes: number[] = [];
@@ -101,7 +101,7 @@ describe('UsbConnection', () => {
 
   it('renders centered text', async () => {
     const conn = await UsbConnection.open(0x04b8, 0x0e28, undefined, 2000, 32);
-    const receipt = new Receipt().line(center('Centered')).line('Left aligned');
+    const receipt = new Receipt().line('Centered', { align: 'center' }).line('Left aligned');
 
     await conn!.print(receipt);
 
@@ -110,7 +110,7 @@ describe('UsbConnection', () => {
 
   it('renders right aligned text', async () => {
     const conn = await UsbConnection.open(0x04b8, 0x0e28, undefined, 2000, 32);
-    const receipt = new Receipt().line(right('Right')).line('Left');
+    const receipt = new Receipt().line('Right', { align: 'right' }).line('Left');
 
     await conn!.print(receipt);
 
@@ -125,13 +125,13 @@ describe('UsbConnection', () => {
       .blank()
       .line(underline('Order #123'))
       .blank()
-      .table(
-        ['Item', 'Price'],
-        [
+      .table({
+        header: ['Item', 'Price'],
+        rows: [
           ['Coffee', '$3.50'],
           ['Muffin', '$2.00'],
         ],
-      )
+      })
       .blank()
       .line(bold(underline('Total: $5.50')))
       .cut();

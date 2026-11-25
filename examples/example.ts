@@ -19,14 +19,14 @@ async function main() {
     .line(bold('Bold text'))
     .line(underline('Underlined text'))
     .blank()
-    .table(
-      ['Product', 'Price'],
-      [
+    .table({
+      header: ['Product', 'Price'],
+      rows: [
         ['Milk', '5.00'],
         ['Cereal', '10.00'],
         ['Bread', '3.50'],
       ],
-    )
+    })
     .blank()
     .line('Thank you!')
     .cut();

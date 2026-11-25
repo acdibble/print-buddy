@@ -1,7 +1,20 @@
 import { createUsbProfile, PrinterProfile } from './printer-profile.js';
 
 const PRINTER_USB_IDS = {
-  TMT20III: { vendorId: 0x04b8, productId: 0x0e28 },
+  TMT20III: {
+    vendorId: 0x04b8,
+    productId: 0x0e28,
+    columnWidths: {
+      '80mm': {
+        FontA: 48,
+        FontB: 64,
+      },
+      '58mm': {
+        FontA: 35,
+        FontB: 46,
+      },
+    },
+  },
 } as const;
 
 export type PrinterModel = keyof typeof PRINTER_USB_IDS;
@@ -23,11 +36,11 @@ export function getUsbProfile(
   model: PrinterModel,
   paperWidth: PaperWidth = '80mm',
 ): PrinterProfile {
-  const { vendorId, productId } = PRINTER_USB_IDS[model];
+  const { vendorId, productId, columnWidths } = PRINTER_USB_IDS[model];
 
   return createUsbProfile({
     vendorId,
     productId,
-    width: PAPER_WIDTH_DOTS[paperWidth],
+    columnsPerFont: columnWidths[paperWidth],
   });
 }

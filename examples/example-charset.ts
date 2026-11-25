@@ -1,4 +1,4 @@
-import { bold, center, getUsbProfile, Printer, Receipt } from '../src/index.js';
+import { bold, getUsbProfile, Printer, Receipt } from '../src/index.js';
 
 async function main() {
   const printer = await Printer.create(getUsbProfile('TMT20III'));
@@ -9,8 +9,8 @@ async function main() {
 
   // CP437 (PC437) character set - default for Epson TM-T20III
   const receipt = new Receipt()
-    .line(center(bold('CP437 CHARACTER SET')))
-    .line(center('Epson TM-T20III'))
+    .line(bold('CP437 CHARACTER SET'), { align: 'center' })
+    .line('Epson TM-T20III', { align: 'center' })
     .blank()
 
     // Basic ASCII (32-126)
@@ -95,7 +95,7 @@ async function main() {
     .line(bold('  TOTAL                 $ 11.34'))
     .line('════════════════════════════════')
     .blank()
-    .line(center('Gracias · Merci · Danke'))
+    .line('Gracias · Merci · Danke', { align: 'center' })
     .blank()
     .cut();
 

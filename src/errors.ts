@@ -9,16 +9,6 @@ export class EscposError extends Error {
 }
 
 /**
- * Error when no font is found in the printer profile
- */
-export class NoFontFoundError extends EscposError {
-  constructor() {
-    super('No font found in printer profile');
-    this.name = 'NoFontFoundError';
-  }
-}
-
-/**
  * Error when the specified font is not supported by the printer
  */
 export class UnsupportedFontError extends EscposError {
@@ -39,41 +29,11 @@ export class NoBulkEndpointError extends EscposError {
 }
 
 /**
- * Error when the operation is not supported for the current connection type
- */
-export class UnsupportedForConnectionError extends EscposError {
-  constructor() {
-    super('Operation not supported for this connection type');
-    this.name = 'UnsupportedForConnectionError';
-  }
-}
-
-/**
  * Error during USB operations
  */
 export class UsbError extends EscposError {
   constructor(message: string) {
     super(`USB error: ${message}`);
     this.name = 'UsbError';
-  }
-}
-
-/**
- * Error during character encoding
- */
-export class EncodingError extends EscposError {
-  constructor(message: string) {
-    super(`Encoding error: ${message}`);
-    this.name = 'EncodingError';
-  }
-}
-
-/**
- * Error when printer is not found
- */
-export class PrinterNotFoundError extends EscposError {
-  constructor() {
-    super('Printer not found');
-    this.name = 'PrinterNotFoundError';
   }
 }

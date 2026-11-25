@@ -45,3 +45,15 @@ export const ALIGN_CENTER = new Uint8Array([0x1b, 0x61, 0x01]);
 
 /** Right justify (ESC a 2) */
 export const ALIGN_RIGHT = new Uint8Array([0x1b, 0x61, 0x02]);
+
+/** Select Font A (ESC M 0) */
+export const FONT_A = new Uint8Array([0x1b, 0x4d, 0x00]);
+
+/** Select Font B (ESC M 1) */
+export const FONT_B = new Uint8Array([0x1b, 0x4d, 0x01]);
+
+/** Turn upside-down mode on (ESC { 1) */
+export const FLIP_ON = new Uint8Array([0x1b, 0x7b, 0x01]);
+
+/** Turn upside-down mode off (ESC { 0) */
+export const FLIP_OFF = new Uint8Array([0x1b, 0x7b, 0x00]);

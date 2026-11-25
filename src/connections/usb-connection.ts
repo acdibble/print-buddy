@@ -9,28 +9,22 @@ import {
   BOLD_ON,
   CUT,
   FEED,
+  FLIP_OFF,
+  FLIP_ON,
+  FONT_A,
+  FONT_B,
   PARTIAL_CUT,
   RESET,
   UNDERLINE_1DOT,
+  UNDERLINE_2DOT,
   UNDERLINE_OFF,
 } from '../command.js';
 import { NoBulkEndpointError, UsbError } from '../errors.js';
-import { Node } from '../receipt.js';
-import { PrinterConnection } from './printer-connection.js';
+import { BlankNode, CutNode, FeedNode, LineNode, PartialCutNode, TextNode } from '../receipt.js';
+import { PrinterConnection, TextStyle } from './printer-connection.js';
 
-function deferred<T>(): {
-  promise: Promise<T>;
-  resolve: (value: T) => void;
-  reject: (reason: unknown) => void;
-} {
-  let resolve!: (value: T) => void;
-  let reject!: (reason: unknown) => void;
-  const promise = new Promise<T>((res, rej) => {
-    resolve = res;
-    reject = rej;
-  });
-  return { promise, resolve, reject };
-}
+const ALIGN = { left: ALIGN_LEFT, center: ALIGN_CENTER, right: ALIGN_RIGHT } as const;
+const UNDERLINE = { none: UNDERLINE_OFF, normal: UNDERLINE_1DOT, thick: UNDERLINE_2DOT } as const;
 
 // libusb transfer type constant for bulk transfers
 const LIBUSB_TRANSFER_TYPE_BULK = 2;
@@ -141,64 +135,45 @@ export class UsbConnection extends PrinterConnection {
   }
 
   private encode(text: string): Uint8Array {
-    return new Uint8Array(iconv.encode(text, 'cp437'));
+    return iconv.encode(text, 'cp437');
   }
 
-  protected async visitText(value: string): Promise<void> {
-    await this.write(this.encode(value));
+  protected async visitText(node: TextNode): Promise<void> {
+    await this.write(this.encode(node.value));
   }
 
-  protected async visitBold(child: Node): Promise<void> {
-    await this.write(BOLD_ON);
-    await this.visit(child);
-    await this.write(BOLD_OFF);
+  protected async applyStyle(next: TextStyle, previous: TextStyle): Promise<void> {
+    if (next.bold !== previous.bold) await this.write(next.bold ? BOLD_ON : BOLD_OFF);
+    if (next.underline !== previous.underline) await this.write(UNDERLINE[next.underline]);
+    if (next.fontB !== previous.fontB) await this.write(next.fontB ? FONT_B : FONT_A);
   }
 
-  protected async visitUnderline(child: Node): Promise<void> {
-    await this.write(UNDERLINE_1DOT);
-    await this.visit(child);
-    await this.write(UNDERLINE_OFF);
-  }
+  protected async visitLine(node: LineNode): Promise<void> {
+    // Alignment and upside-down mode apply to the whole line when it prints,
+    // so set them first and restore the defaults after the line feed.
+    if (node.align !== 'left') await this.write(ALIGN[node.align]);
+    if (node.flip) await this.write(FLIP_ON);
 
-  protected async visitLeft(child: Node): Promise<void> {
-    await this.write(ALIGN_LEFT);
-    await this.visit(child);
-  }
-
-  protected async visitCenter(child: Node): Promise<void> {
-    await this.write(ALIGN_CENTER);
-    await this.visit(child);
-  }
-
-  protected async visitRight(child: Node): Promise<void> {
-    await this.write(ALIGN_RIGHT);
-    await this.visit(child);
-  }
-
-  protected async visitLine(child: Node): Promise<void> {
-    await this.visit(child);
+    await this.visit(node.child);
     await this.write(this.encode('\n'));
-    await this.write(ALIGN_LEFT); // Reset alignment after line is flushed
+
+    if (node.flip) await this.write(FLIP_OFF);
+    if (node.align !== 'left') await this.write(ALIGN_LEFT);
   }
 
-  protected async visitBlank(count: number): Promise<void> {
-    await this.write(this.encode('\n'.repeat(count)));
+  protected async visitBlank(node: BlankNode): Promise<void> {
+    await this.write(this.encode('\n'.repeat(node.count)));
   }
 
-  protected async visitTable(headers: [string, string], rows: [string, string][]): Promise<void> {
-    const output = this.formatter.duoTable(headers, rows);
-    await this.write(this.encode(output));
-  }
-
-  protected async visitFeed(): Promise<void> {
+  protected async visitFeed(_node: FeedNode): Promise<void> {
     await this.write(FEED);
   }
 
-  protected async visitCut(): Promise<void> {
+  protected async visitCut(_node: CutNode): Promise<void> {
     await this.write(CUT);
   }
 
-  protected async visitPartialCut(): Promise<void> {
+  protected async visitPartialCut(_node: PartialCutNode): Promise<void> {
     await this.write(PARTIAL_CUT);
   }
 
@@ -212,7 +187,7 @@ export class UsbConnection extends PrinterConnection {
       throw new UsbError('Connection not initialized');
     }
 
-    const { promise, resolve, reject } = deferred<void>();
+    const { promise, resolve, reject } = Promise.withResolvers<void>();
     const buffer = Buffer.from(data);
     this.endpoint.timeout = this.timeout;
     this.endpoint.transfer(buffer, (err) => {

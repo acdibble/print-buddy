@@ -1,5 +1,4 @@
 import { ConsoleConnection, PrinterConnection, UsbConnection } from './connections/index.js';
-import { NoFontFoundError } from './errors.js';
 import { PrinterProfile } from './printer-profile.js';
 import { Receipt } from './receipt.js';
 
@@ -30,10 +29,7 @@ export class Printer {
    * @returns The printer instance, or null if the device was not found (USB only)
    */
   static async create(profile: PrinterProfile): Promise<Printer | null> {
-    const fontAWidth = profile.columnsPerFont.get('FontA');
-    if (fontAWidth === undefined) {
-      throw new NoFontFoundError();
-    }
+    const fontAWidth = profile.columnsPerFont.FontA;
 
     let connection: PrinterConnection;
 
@@ -58,9 +54,6 @@ export class Printer {
         connection = new ConsoleConnection(fontAWidth);
         break;
       }
-
-      case 'network':
-        throw new Error('Network connection not implemented');
     }
 
     return new Printer(connection);

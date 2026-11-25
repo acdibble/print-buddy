@@ -1,5 +1,6 @@
-import { Node } from '../receipt.js';
-import { PrinterConnection } from './printer-connection.js';
+import { textOf } from '../layout.js';
+import { BlankNode, CutNode, FeedNode, LineNode, PartialCutNode, TextNode } from '../receipt.js';
+import { PrinterConnection, TextStyle } from './printer-connection.js';
 
 const ANSI = {
   reset: '\x1b[0m',
@@ -18,80 +19,48 @@ export class ConsoleConnection extends PrinterConnection {
     super(width);
   }
 
-  protected async visitText(value: string): Promise<void> {
-    process.stdout.write(value);
+  protected async visitText(node: TextNode): Promise<void> {
+    process.stdout.write(node.value);
   }
 
-  protected async visitBold(child: Node): Promise<void> {
-    process.stdout.write(ANSI.bold);
-    await this.visit(child);
-    process.stdout.write(ANSI.reset);
-  }
-
-  protected async visitUnderline(child: Node): Promise<void> {
-    process.stdout.write(ANSI.underline);
-    await this.visit(child);
-    process.stdout.write(ANSI.reset);
-  }
-
-  protected async visitLeft(child: Node): Promise<void> {
-    await this.visit(child);
-  }
-
-  protected async visitCenter(child: Node): Promise<void> {
-    const text = this.extractText(child);
-    const padding = Math.max(0, Math.floor((this.width - text.length) / 2));
-    process.stdout.write(' '.repeat(padding));
-    await this.visit(child);
-  }
-
-  protected async visitRight(child: Node): Promise<void> {
-    const text = this.extractText(child);
-    const padding = Math.max(0, this.width - text.length);
-    process.stdout.write(' '.repeat(padding));
-    await this.visit(child);
-  }
-
-  private extractText(node: Node): string {
-    switch (node.kind) {
-      case 'text':
-        return node.value;
-      case 'bold':
-      case 'underline':
-      case 'left':
-      case 'center':
-      case 'right':
-      case 'line':
-        return this.extractText(node.child);
-      default:
-        return '';
+  protected async applyStyle(next: TextStyle, previous: TextStyle): Promise<void> {
+    // ANSI has no reliable per-style "off" code, so when a style ends, reset
+    // everything and switch the remaining styles back on.
+    const turnedOff =
+      (previous.bold && !next.bold) || (previous.underline !== 'none' && next.underline === 'none');
+    let codes = turnedOff ? ANSI.reset : '';
+    if (next.bold && (turnedOff || !previous.bold)) codes += ANSI.bold;
+    if (next.underline !== 'none' && (turnedOff || previous.underline === 'none')) {
+      codes += ANSI.underline;
     }
+    // Font B has no terminal equivalent, so it's ignored
+    if (codes) process.stdout.write(codes);
   }
 
-  protected async visitLine(child: Node): Promise<void> {
-    await this.visit(child);
+  protected async visitLine(node: LineNode): Promise<void> {
+    // The console can't print upside-down, so node.flip is ignored
+    const free = Math.max(0, this.width - textOf(node.child).length);
+    const padding =
+      node.align === 'center' ? Math.floor(free / 2) : node.align === 'right' ? free : 0;
+    process.stdout.write(' '.repeat(padding));
+    await this.visit(node.child);
     process.stdout.write('\n');
   }
 
-  protected async visitBlank(count: number): Promise<void> {
-    process.stdout.write('\n'.repeat(count));
+  protected async visitBlank(node: BlankNode): Promise<void> {
+    process.stdout.write('\n'.repeat(node.count));
   }
 
-  protected async visitTable(headers: [string, string], rows: [string, string][]): Promise<void> {
-    const output = this.formatter.duoTable(headers, rows);
-    process.stdout.write(output);
-  }
-
-  protected async visitFeed(): Promise<void> {
+  protected async visitFeed(_node: FeedNode): Promise<void> {
     process.stdout.write('\n\n\n\n');
   }
 
-  protected async visitCut(): Promise<void> {
+  protected async visitCut(_node: CutNode): Promise<void> {
     const line = ANSI.dim + '\u2702 ' + '\u2500'.repeat(this.width - 2) + ANSI.reset + '\n';
     process.stdout.write(line);
   }
 
-  protected async visitPartialCut(): Promise<void> {
+  protected async visitPartialCut(_node: PartialCutNode): Promise<void> {
     const line = ANSI.dim + '\u2702 ' + '\u254C'.repeat(this.width - 2) + ANSI.reset + '\n';
     process.stdout.write(line);
   }

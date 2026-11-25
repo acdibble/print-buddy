@@ -13,27 +13,26 @@ Requires Node.js 24 or later.
 ## Quick Start
 
 ```typescript
-import { Printer, createConsoleProfile, Receipt, bold, center, underline } from 'print-buddy';
+import { Printer, createConsoleProfile, Receipt, bold, underline } from 'print-buddy';
 
 const printer = await Printer.create(createConsoleProfile());
 
 const receipt = new Receipt()
-  .line(center(bold('COFFEE SHOP')))
-  .line(center('123 Main Street'))
-  .blank()
-  .line(underline('Order #12345'))
-  .blank()
-  .table(
-    ['Item', 'Price'],
-    [
-      ['Latte', '$4.50'],
-      ['Croissant', '$3.25'],
+  .line(bold('COFFEE SHOP'), { align: 'center' })
+  .line('123 Main Street', { align: 'center' })
+  .rule('=')
+  .line(['Order ', underline('#12345')])
+  .table({
+    header: ['Item', 'Qty', 'Price'],
+    rows: [
+      ['Latte', '1', '$4.50'],
+      ['Croissant', '1', '$3.25'],
     ],
-  )
+  })
+  .rule()
+  .pair(bold('Total'), bold('$7.75'))
   .blank()
-  .line(bold(underline('Total: $7.75')))
-  .blank()
-  .line('Thank you!')
+  .paragraph('Thank you! Returns accepted within 30 days with a receipt.', { align: 'center' })
   .cut();
 
 await printer.print(receipt);
@@ -70,15 +69,43 @@ if (!printer) {
 
 ```typescript
 const receipt = new Receipt()
-  .line(content)         // Print content followed by a newline
-  .blank(count?)         // Print blank lines (default: 1)
-  .table(headers, rows)  // Two-column table: [string, string] headers and rows
-  .feed()                // Feed paper (no cut)
-  .cut()                 // Full paper cut
-  .partialCut();         // Partial paper cut
+  .line(content, options?)        // Print content followed by a newline
+  .paragraph(content, options?)   // Word-wrap content to the paper width
+  .rule(pattern?)                 // Fill a line with a pattern (default: '-')
+  .pair(left, right, { fill? })   // Content at both edges, e.g. a label and a price
+  .table({ columns?, header?, rows, divider? })  // Table sized to the paper width
+  .blank(count?)                  // Print blank lines (default: 1)
+  .feed()                         // Feed paper (no cut)
+  .cut()                          // Full paper cut
+  .partialCut();                  // Partial paper cut
 ```
 
-`content` is a string or a styled node.
+`content` is a string, a styled node, or an array of them. `options` sets line-level settings; see [Line Options](#line-options).
+
+### Layout
+
+`paragraph`, `rule`, `pair` and `table` are laid out when the receipt prints, so they fit whatever paper width the printer has.
+
+```typescript
+receipt
+  .rule('=') // A full-width line of '='
+  .pair('Subtotal', '$9.00') // Label at the left edge, amount at the right
+  .pair('Tip', '$1.50', { fill: '.' }) // Same, with dot leaders: "Tip ....... $1.50"
+  .table({
+    columns: [{}, { align: 'center' }, { width: 8 }],
+    header: [bold('Item'), bold('Qty'), bold('Price')],
+    rows: [
+      ['Espresso', '2', '$8.00'],
+      [underline('Croissant'), '1', '$3.50'],
+    ],
+  });
+```
+
+- **`pair`** moves the right side onto the next line if both sides don't fit on one.
+- **`table`** has as many columns as its widest row. The first column is left-aligned and the rest are right-aligned unless `columns` says otherwise. Columns without a fixed `width` fit their content; the first of them takes any spare room, and the widest shrinks if the table is too wide. Cells that don't fit wrap onto extra lines. The header is underlined with `divider` (default `'-'`; `false` for none).
+- **`paragraph`** breaks lines at spaces, and mid-word only for words longer than a line.
+
+Widths are counted in characters, so Font B content inside a `pair` or `table` takes less room than counted and won't line up exactly.
 
 ### Styling
 
@@ -90,19 +117,48 @@ bold('Hello'); // Bold
 underline('Hello'); // 1-dot underline
 underline('Hello', 'thick'); // 2-dot underline
 fontB('Hello'); // Font B (narrower, more columns per line)
-flip('Hello'); // Upside-down (180° rotation)
 bold(underline('Hello')); // Bold + underlined
 ```
 
-### Alignment
+Use an array to mix styles on one line. Arrays work anywhere content does, including inside styles:
 
 ```typescript
-left('Hello');
-center('Hello');
-right(bold('Total: $9.00'));
+receipt.line(['Total: ', bold('$5.50')]).line(bold(['Order ', underline('#123'), ' paid']));
 ```
 
-Alignment applies to the line it appears in. Each `line()` returns to left alignment afterwards.
+### Line Options
+
+Alignment and upside-down printing apply to a whole line, so they're options on `line()` rather than styles:
+
+```typescript
+receipt
+  .line('Hello', { align: 'center' }) // 'left' (default), 'center' or 'right'
+  .line(bold('Total: $9.00'), { align: 'right' })
+  .line('Hello', { flip: true }); // Upside-down (180° rotation)
+```
+
+Each option applies only to its own line.
+
+### Composing Receipts
+
+Build receipts from reusable parts, and add loops and conditions without breaking the chain:
+
+```typescript
+const footer = new Receipt().rule().line('Thank you!', { align: 'center' });
+
+const receipt = new Receipt()
+  .line(bold('COFFEE SHOP'), { align: 'center' })
+  .each(order.items, (r, item) => r.pair(item.name, item.price))
+  .when(order.tip, (r) => r.pair('Tip', order.tip))
+  .append(footer)
+  .cut();
+```
+
+- **`append(...receipts)`** copies in the other receipts' contents as they are at that moment.
+- **`each(items, fn)`** calls `fn(receipt, item, index)` for every item in any iterable.
+- **`when(condition, fn)`** calls `fn(receipt)` only if `condition` is truthy.
+
+`receipt.nodes()` returns a copy of the receipt's nodes, so changing the array doesn't change the receipt.
 
 ### Printer Profiles
 
