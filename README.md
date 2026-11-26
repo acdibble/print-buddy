@@ -106,6 +106,7 @@ const receipt = new Receipt()
   .rule(pattern?)                 // Fill a line with a pattern (default: '-')
   .pair(left, right, { fill? })   // Content at both edges, e.g. a label and a price
   .table({ columns?, header?, rows, divider? })  // Table sized to the paper width
+  .image(pixels, options?)        // Black and white image, scaled to fit the paper
   .blank(count?)                  // Print blank lines (default: 1)
   .feed()                         // Feed paper (no cut)
   .cut()                          // Full paper cut
@@ -138,6 +139,30 @@ receipt
 - **`paragraph`** breaks lines at spaces, and mid-word only for words longer than a line.
 
 Widths are counted in characters, so Font B content inside a `pair` or `table` takes less room than counted and won't line up exactly.
+
+### Images
+
+`image()` takes decoded pixels: `width`, `height` and `data` with 1 to 4 values per pixel (gray, gray + alpha, RGB or RGBA). That's the shape of a browser `ImageData`, [pngjs](https://www.npmjs.com/package/pngjs) output, or [sharp](https://www.npmjs.com/package/sharp)'s raw output, so print-buddy doesn't need an image decoder of its own:
+
+```typescript
+import sharp from 'sharp';
+
+const { data, info } = await sharp('logo.png').raw().toBuffer({ resolveWithObject: true });
+
+receipt
+  .image({ ...info, data }, { align: 'center' }) // At its own size, centered
+  .image({ ...info, data }, { width: 'full' }) // Scaled to the paper width
+  .image({ ...info, data }, { width: 200, dither: 'threshold' }); // 200 dots wide, no dithering
+```
+
+| Option      | Default             | Description                                                                                                |
+| ----------- | ------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `align`     | `'left'`            | `'left'`, `'center'` or `'right'`                                                                          |
+| `width`     | the image's width   | Printed width in dots, or `'full'` for the paper width. Images wider than the paper shrink to fit          |
+| `dither`    | `'floyd-steinberg'` | `'floyd-steinberg'` keeps the shading of photos and gradients; `'threshold'` keeps text and line art crisp |
+| `threshold` | `128`               | Gray level (0–255) below which a dot prints black                                                          |
+
+Transparent pixels print white. The paper width in dots is 12 per Font A column (576 on 80mm paper with the TM-T20III), and images are scaled and dithered when the receipt prints. The console printer draws images with block characters.
 
 ### Styling
 
@@ -235,6 +260,7 @@ The console output does not show Font B or upside-down text. It prints that cont
 pnpm tsx examples/example.ts          # Console output
 pnpm tsx examples/example-usb.ts      # Feature showcase on a USB printer
 pnpm tsx examples/example-charset.ts  # CP437 character set on a USB printer
+pnpm tsx examples/example-image.ts    # Images on the console (add --usb for a USB printer)
 ```
 
 ## License

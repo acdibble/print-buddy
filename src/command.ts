@@ -28,14 +28,28 @@ export const UNDERLINE_1DOT = new Uint8Array([0x1b, 0x2d, 0x01]);
 /** 2-dot underline (ESC - 2) */
 export const UNDERLINE_2DOT = new Uint8Array([0x1b, 0x2d, 0x02]);
 
-/** Bitmap mode prefix (ESC *) */
-export const BITMAP = new Uint8Array([0x1b, 0x2a]);
-
-/** Set line spacing to 0 (ESC 3 0) */
-export const LINE_SPACING_0 = new Uint8Array([0x1b, 0x33, 0x00]);
-
-/** Reset line spacing (ESC 2) */
-export const LINE_SPACING_RESET = new Uint8Array([0x1b, 0x32]);
+/**
+ * Print a raster bit image at normal size (GS v 0 m xL xH yL yH d1...dk)
+ *
+ * @param bytesPerRow Width in bytes (8 dots each)
+ * @param rows Height in dots
+ * @param data Packed rows, `bytesPerRow × rows` bytes, MSB = leftmost dot
+ */
+export function rasterImage(bytesPerRow: number, rows: number, data: Uint8Array): Uint8Array {
+  const command = new Uint8Array(8 + data.length);
+  command.set([
+    0x1d,
+    0x76,
+    0x30,
+    0x00,
+    bytesPerRow & 0xff,
+    bytesPerRow >> 8,
+    rows & 0xff,
+    rows >> 8,
+  ]);
+  command.set(data, 8);
+  return command;
+}
 
 /** Left justify (ESC a 0) */
 export const ALIGN_LEFT = new Uint8Array([0x1b, 0x61, 0x00]);

@@ -13,16 +13,24 @@ import {
   FONT_A,
   FONT_B,
   PARTIAL_CUT,
+  rasterImage,
   RESET,
   UNDERLINE_1DOT,
   UNDERLINE_2DOT,
   UNDERLINE_OFF,
 } from '../command.js';
+import { bytesPerRow, RasterNode } from '../image.js';
 import { BlankNode, CutNode, FeedNode, LineNode, PartialCutNode, TextNode } from '../receipt.js';
 import { PrinterConnection, TextStyle } from './printer-connection.js';
 
 const ALIGN = { left: ALIGN_LEFT, center: ALIGN_CENTER, right: ALIGN_RIGHT } as const;
 const UNDERLINE = { none: UNDERLINE_OFF, normal: UNDERLINE_1DOT, thick: UNDERLINE_2DOT } as const;
+
+/**
+ * Rows per raster command. Tall images go out as several commands that print
+ * back to back, which keeps each one well within the printer's input buffer.
+ */
+const RASTER_BAND_ROWS = 256;
 
 /**
  * Base class for connections that send ESC/POS bytes to a real printer
@@ -60,6 +68,20 @@ export abstract class EscPosConnection extends PrinterConnection {
     await this.write(this.encode('\n'));
 
     if (node.flip) await this.write(FLIP_OFF);
+    if (node.align !== 'left') await this.write(ALIGN_LEFT);
+  }
+
+  protected async visitRaster(node: RasterNode): Promise<void> {
+    const { bitmap } = node;
+    const rowBytes = bytesPerRow(bitmap.width);
+
+    // GS v 0 follows the justification set by ESC a
+    if (node.align !== 'left') await this.write(ALIGN[node.align]);
+    for (let top = 0; top < bitmap.height; top += RASTER_BAND_ROWS) {
+      const rows = Math.min(RASTER_BAND_ROWS, bitmap.height - top);
+      const band = bitmap.data.subarray(top * rowBytes, (top + rows) * rowBytes);
+      await this.write(rasterImage(rowBytes, rows, band));
+    }
     if (node.align !== 'left') await this.write(ALIGN_LEFT);
   }
 

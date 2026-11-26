@@ -24,12 +24,7 @@ const PRINTER_USB_IDS = {
 
 export type PrinterModel = keyof typeof PRINTER_USB_IDS;
 
-const PAPER_WIDTH_DOTS = {
-  '80mm': 576,
-  '58mm': 384,
-} as const;
-
-export type PaperWidth = keyof typeof PAPER_WIDTH_DOTS;
+export type PaperWidth = '80mm' | '58mm';
 
 /**
  * Get a USB printer profile for a known printer model

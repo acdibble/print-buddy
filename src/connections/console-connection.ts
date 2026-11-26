@@ -1,3 +1,4 @@
+import { RasterNode, renderBlocks } from '../image.js';
 import { textOf } from '../layout.js';
 import { BlankNode, CutNode, FeedNode, LineNode, PartialCutNode, TextNode } from '../receipt.js';
 import { PrinterConnection, TextStyle } from './printer-connection.js';
@@ -45,6 +46,16 @@ export class ConsoleConnection extends PrinterConnection {
     process.stdout.write(' '.repeat(padding));
     await this.visit(node.child);
     process.stdout.write('\n');
+  }
+
+  protected async visitRaster(node: RasterNode): Promise<void> {
+    // Draw the image with block characters, one per Font A column
+    for (const row of renderBlocks(node.bitmap)) {
+      const free = Math.max(0, this.width - row.length);
+      const padding =
+        node.align === 'center' ? Math.floor(free / 2) : node.align === 'right' ? free : 0;
+      process.stdout.write(' '.repeat(padding) + row + '\n');
+    }
   }
 
   protected async visitBlank(node: BlankNode): Promise<void> {

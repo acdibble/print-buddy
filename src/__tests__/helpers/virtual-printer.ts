@@ -1,5 +1,7 @@
 import iconv from 'iconv-lite';
 
+import { type Bitmap, renderBlocks } from '../../image.js';
+
 /**
  * Virtual ESC/POS printer for tests.
  *
@@ -15,6 +17,10 @@ import iconv from 'iconv-lite';
  *   ESC a still changed the alignment of the line being printed.
  * - Text sits in the buffer until a line feed. Text never followed by one is
  *   reported as a warning, because a real printer would never print it.
+ * - Raster images (GS v 0) print at once with the alignment in effect. Back to
+ *   back images of the same width merge, as they do on paper, so an image
+ *   sent in bands renders as one. The printer ignores GS v 0 while text is
+ *   buffered, so that's a warning too.
  *
  * Unknown commands throw, so tests fail if the library starts emitting bytes
  * this model doesn't understand.
@@ -39,6 +45,7 @@ export interface Run {
 
 export type PaperItem =
   | { kind: 'line'; align: Align; upsideDown: boolean; runs: Run[] }
+  | { kind: 'image'; align: Align; bitmap: Bitmap }
   | { kind: 'cut'; partial: boolean };
 
 interface State {
@@ -126,6 +133,10 @@ export class VirtualPrinter {
         }
       } else if (b === GS) {
         const cmd = arg('GS');
+        if (cmd === 0x76) {
+          i = this.rasterImage(bytes, i, offset);
+          continue;
+        }
         if (cmd !== 0x56) {
           throw new Error(`Unsupported command GS ${hex(cmd)} at byte ${String(offset)}`);
         }
@@ -170,6 +181,8 @@ export class VirtualPrinter {
       if (item.kind === 'cut') {
         out.push(item.partial ? `└${rule('╌')}┘ ✂ partial cut` : `└${rule('─')}┘ ✂ cut`);
         open = false;
+      } else if (item.kind === 'image') {
+        out.push(...this.renderImage(item));
       } else {
         out.push(this.renderLine(item));
       }
@@ -209,6 +222,63 @@ export class VirtualPrinter {
     }
 
     return `│${body}│${labels.length > 0 ? ' ' + labels.join(' · ') : ''}`;
+  }
+
+  /**
+   * GS v 0 m xL xH yL yH d1...dk - print raster bit image. `i` points just
+   * after "GS v"; returns the index after the image data.
+   */
+  private rasterImage(bytes: Uint8Array, i: number, offset: number): number {
+    const header = bytes.subarray(i, i + 6);
+    if (header.length < 6) throw new Error('GS v: missing arguments at end of data');
+    const [fn, m, xL, xH, yL, yH] = header;
+    if (fn !== 0x30)
+      throw new Error(`Unsupported command GS v ${hex(fn)} at byte ${String(offset)}`);
+    if (m !== 0 && m !== 48) throw new Error(`GS v 0: unsupported scaling mode ${String(m)}`);
+    const rowBytes = xL + xH * 256;
+    const height = yL + yH * 256;
+    if (rowBytes < 1 || height < 1) throw new Error('GS v 0: empty image');
+    const start = i + 6;
+    const end = start + rowBytes * height;
+    if (end > bytes.length) {
+      throw new Error(
+        `GS v 0: expected ${String(rowBytes * height)} bytes of image data, got ${String(bytes.length - start)}`,
+      );
+    }
+
+    if (this.runs.length > 0) {
+      this.warnings.push(`GS v 0 ignored while text was buffered: "${this.bufferedText()}"`);
+      return end;
+    }
+    const width = rowBytes * 8;
+    if (width > this.widthDots) {
+      this.warnings.push(
+        `image is ${String(width)} dots wide but the paper fits ${String(this.widthDots)}`,
+      );
+    }
+
+    const data = bytes.slice(start, end);
+    const last = this.paper.at(-1);
+    if (last?.kind === 'image' && last.align === this.state.align && last.bitmap.width === width) {
+      const merged = new Uint8Array(last.bitmap.data.length + data.length);
+      merged.set(last.bitmap.data);
+      merged.set(data, last.bitmap.data.length);
+      last.bitmap = { width, height: last.bitmap.height + height, data: merged };
+    } else {
+      this.paper.push({ kind: 'image', align: this.state.align, bitmap: { width, height, data } });
+    }
+    return end;
+  }
+
+  private renderImage(item: Extract<PaperItem, { kind: 'image' }>): string[] {
+    const free = Math.max(0, this.widthDots - item.bitmap.width);
+    const padDots =
+      item.align === 'center' ? Math.floor(free / 2) : item.align === 'right' ? free : 0;
+    const padding = ' '.repeat(Math.round(padDots / CHAR_DOTS.A));
+    const label = ` image ${String(item.bitmap.width)}×${String(item.bitmap.height)}`;
+    return renderBlocks(item.bitmap).map(
+      (row, n) => `│${(padding + row).padEnd(this.columns)}│${n === 0 ? label : ''}`,
+    );
   }
 
   private setStyle(patch: Partial<Style>): void {

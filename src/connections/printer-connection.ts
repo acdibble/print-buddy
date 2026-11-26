@@ -1,3 +1,4 @@
+import { RasterNode, rasterize } from '../image.js';
 import { layout } from '../layout.js';
 import {
   BlankNode,
@@ -22,6 +23,9 @@ export interface TextStyle {
 
 const DEFAULT_STYLE: TextStyle = { bold: false, underline: 'none', fontB: false };
 
+/** Width of a Font A character in dots */
+const FONT_A_DOTS = 12;
+
 /**
  * Abstract base class for printer connections with visitor pattern
  *
@@ -36,6 +40,11 @@ export abstract class PrinterConnection {
 
   constructor(width: number = 32) {
     this.width = width;
+  }
+
+  /** Printable width in dots, derived from the Font A column count */
+  protected get dotsPerLine(): number {
+    return this.width * FONT_A_DOTS;
   }
 
   /**
@@ -88,6 +97,9 @@ export abstract class PrinterConnection {
       case 'table':
         for (const line of layout(node, this.width)) await this.visitLine(line);
         break;
+      case 'image':
+        await this.visitRaster(rasterize(node, this.dotsPerLine));
+        break;
       case 'feed':
         await this.visitFeed(node);
         break;
@@ -132,6 +144,8 @@ export abstract class PrinterConnection {
 
   protected abstract visitText(node: TextNode): Promise<void>;
   protected abstract visitLine(node: LineNode): Promise<void>;
+  /** Print an image already scaled and dithered to fit the paper */
+  protected abstract visitRaster(node: RasterNode): Promise<void>;
   protected abstract visitBlank(node: BlankNode): Promise<void>;
   protected abstract visitFeed(node: FeedNode): Promise<void>;
   protected abstract visitCut(node: CutNode): Promise<void>;

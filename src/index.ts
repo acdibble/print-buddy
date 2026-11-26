@@ -8,6 +8,9 @@ export {
   UsbError,
 } from './errors.js';
 
+// Images
+export { type Dither, type RawImage } from './image.js';
+
 // Printer
 export { Printer } from './printer.js';
 export {
@@ -41,6 +44,8 @@ export {
   type FeedNode,
   fontB,
   type FontBNode,
+  type ImageNode,
+  type ImageOptions,
   type InlineNode,
   type LayoutNode,
   type LineNode,

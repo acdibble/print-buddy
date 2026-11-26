@@ -8,6 +8,18 @@ import { VirtualPrinter } from './helpers/virtual-printer.js';
 
 vi.mock('usb', async () => (await import('./helpers/usb-mock.js')).createUsbModule());
 
+/** A black disc on white, `size` pixels square, as grayscale data */
+function disc(size: number) {
+  const r = size / 2;
+  const data = new Uint8Array(size * size);
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      data[y * size + x] = (x + 0.5 - r) ** 2 + (y + 0.5 - r) ** 2 <= r * r ? 0 : 255;
+    }
+  }
+  return { width: size, height: size, data };
+}
+
 /** Print a receipt through the real USB connection and render what comes out */
 async function printVirtual(receipt: Receipt, columns = 32): Promise<string> {
   writtenBytes.length = 0;
@@ -62,6 +74,17 @@ describe('VirtualPrinter', () => {
   it('warns about text that never gets a line feed', () => {
     const printer = new VirtualPrinter(10).write(text('lost'));
     expect(printer.render()).toMatchInlineSnapshot(`"⚠ text never printed (no line feed): "lost""`);
+  });
+
+  it('ignores raster images sent while text is buffered', () => {
+    const image = [0x1d, 0x76, 0x30, 0, 1, 0, 1, 0, 0xff];
+    const printer = new VirtualPrinter(8).write([...text('abc'), ...image, ...text('\n')]);
+    expect(printer.render()).toMatchInlineSnapshot(`
+      "┌────────┐
+      │abc     │
+      └────────┘ (no cut)
+      ⚠ GS v 0 ignored while text was buffered: "abc""
+    `);
   });
 
   it('throws on commands it does not understand', () => {
@@ -171,6 +194,62 @@ describe('UsbConnection output on a virtual printer', () => {
       │abc                             │ underline "a" · thick underline "b" · underline "c"
       │abc                             │ font B
       └────────────────────────────────┘ ✂ cut"
+    `);
+  });
+
+  it('renders images with their alignment', async () => {
+    const receipt = new Receipt()
+      .line('Logo', { align: 'center' })
+      .image(disc(96), { align: 'center' })
+      .image(disc(48), { align: 'right' })
+      .line('Left')
+      .cut();
+
+    expect(await printVirtual(receipt)).toMatchInlineSnapshot(`
+      "┌────────────────────────────────┐
+      │              Logo              │
+      │             ▄████▄             │ image 96×96
+      │            ▟██████▙            │
+      │            ▜██████▛            │
+      │             ▀████▀             │
+      │                            ▟██▙│ image 48×48
+      │                            ▜██▛│
+      │Left                            │
+      └────────────────────────────────┘ ✂ cut"
+    `);
+  });
+
+  it('sends tall images in bands that print as one image', async () => {
+    writtenBytes.length = 0;
+    const conn = await UsbConnection.open(0x04b8, 0x0e28, undefined, 2000, 32);
+    const data = new Uint8Array(16 * 600);
+    await conn.print(
+      new Receipt().image({ width: 16, height: 600, data }, { dither: 'threshold' }),
+    );
+
+    const headers = writtenBytes
+      .map((_, i) => writtenBytes.slice(i, i + 8))
+      .filter((h) => h[0] === 0x1d && h[1] === 0x76 && h[2] === 0x30);
+    // GS v 0 m xL xH yL yH: 2 bytes per row, 256 + 256 + 88 rows
+    expect(headers).toEqual([
+      [0x1d, 0x76, 0x30, 0, 2, 0, 0, 1],
+      [0x1d, 0x76, 0x30, 0, 2, 0, 0, 1],
+      [0x1d, 0x76, 0x30, 0, 2, 0, 88, 0],
+    ]);
+
+    const printer = new VirtualPrinter(32).write(writtenBytes);
+    expect(printer.paper).toHaveLength(1);
+    expect(printer.paper[0]).toMatchObject({ kind: 'image', bitmap: { width: 16, height: 600 } });
+    expect(printer.warnings).toEqual([]);
+  });
+
+  it('shrinks images to the paper width', async () => {
+    const receipt = new Receipt().image(disc(96), { width: 'full' });
+    expect(await printVirtual(receipt, 4)).toMatchInlineSnapshot(`
+      "┌────┐
+      │▟██▙│ image 48×48
+      │▜██▛│
+      └────┘ (no cut)"
     `);
   });
 

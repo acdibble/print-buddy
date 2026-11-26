@@ -39,6 +39,24 @@ describe('ConsoleConnection', () => {
     `);
   });
 
+  it('draws images with block characters', async () => {
+    // 48×48 dots: 4 columns × 2 rows of block characters
+    const data = Array.from({ length: 48 * 48 }, (_, i) =>
+      (i % 48) + Math.floor(i / 48) < 48 ? 0 : 255,
+    );
+    const receipt = new Receipt()
+      .image({ width: 48, height: 48, data }, { dither: 'threshold' })
+      .image({ width: 48, height: 48, data }, { dither: 'threshold', align: 'center' });
+
+    expect(await printConsole(receipt)).toMatchInlineSnapshot(`
+      "<reset>██▛▘
+      ▛▘  
+              ██▛▘
+              ▛▘  
+      <reset>"
+    `);
+  });
+
   it('keeps an outer style after a nested one ends', async () => {
     const receipt = new Receipt()
       .line(underline(['a', bold('b'), 'c']))

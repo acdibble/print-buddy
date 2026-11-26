@@ -1,9 +1,11 @@
+import { type Dither, type RawImage, toGrayscale } from './image.js';
+
 /**
  * AST node types for receipt documents
  *
  * Inline nodes style text character by character and can nest freely.
- * Block nodes make up the receipt itself; each one is a line, a gap, or a
- * paper command.
+ * Block nodes make up the receipt itself; each one is a line, an image, a
+ * gap, or a paper command.
  */
 export type TextNode = { kind: 'text'; value: string };
 export type BoldNode = { kind: 'bold'; child: InlineNode };
@@ -60,6 +62,21 @@ export interface TableOptions {
   divider?: string | false;
 }
 
+export interface ImageOptions {
+  /** Horizontal alignment (default: 'left') */
+  align?: Align;
+  /**
+   * Printed width in dots, or 'full' for the whole paper width (default: the
+   * image's own width). Images never print wider than the paper; they're
+   * scaled down to fit, keeping their aspect ratio.
+   */
+  width?: number | 'full';
+  /** How grays become black and white dots (default: 'floyd-steinberg') */
+  dither?: Dither;
+  /** Gray level from 0 to 255 below which a dot prints black (default: 128) */
+  threshold?: number;
+}
+
 export type LineNode = { kind: 'line'; child: InlineNode; align: Align; flip: boolean };
 export type ParagraphNode = { kind: 'paragraph'; child: InlineNode; align: Align; flip: boolean };
 export type RuleNode = { kind: 'rule'; pattern: string };
@@ -71,6 +88,18 @@ export type TableNode = {
   rows: InlineNode[][];
   divider: string | null;
 };
+export type ImageNode = {
+  kind: 'image';
+  /** Grayscale pixels row by row, 0 = black, 255 = white */
+  gray: Uint8Array;
+  width: number;
+  height: number;
+  /** Requested width in dots; null for the image's own width */
+  printWidth: number | 'full' | null;
+  align: Align;
+  dither: Dither;
+  threshold: number;
+};
 export type BlankNode = { kind: 'blank'; count: number };
 export type FeedNode = { kind: 'feed' };
 export type CutNode = { kind: 'cut' };
@@ -79,7 +108,14 @@ export type PartialCutNode = { kind: 'partialCut' };
 /** Block nodes that are laid out to fit the paper width when printed */
 export type LayoutNode = ParagraphNode | RuleNode | PairNode | TableNode;
 
-export type BlockNode = LineNode | LayoutNode | BlankNode | FeedNode | CutNode | PartialCutNode;
+export type BlockNode =
+  | LineNode
+  | LayoutNode
+  | ImageNode
+  | BlankNode
+  | FeedNode
+  | CutNode
+  | PartialCutNode;
 
 export type Node = InlineNode | BlockNode;
 
@@ -201,6 +237,40 @@ export class Receipt {
     const divider = options.divider === false ? null : (options.divider ?? '-');
     if (divider === '') throw new Error('table() divider must not be empty');
     this._nodes.push({ kind: 'table', columns, header, rows, divider });
+    return this;
+  }
+
+  /**
+   * Add an image, printed in black and white
+   *
+   * The image is converted to grayscale now; it's scaled to the paper and
+   * dithered when the receipt prints. Decode image files with a library such
+   * as sharp or pngjs and pass the raw pixels.
+   *
+   * @example
+   * const { data, info } = await sharp('logo.png').raw().toBuffer({ resolveWithObject: true });
+   * receipt.image({ ...info, data }, { align: 'center', width: 256 });
+   */
+  image(image: RawImage, options: ImageOptions = {}): this {
+    const gray = toGrayscale(image);
+    const printWidth = options.width ?? null;
+    if (typeof printWidth === 'number' && (!Number.isInteger(printWidth) || printWidth < 1)) {
+      throw new Error(`image() width must be a positive integer, got ${String(printWidth)}`);
+    }
+    const threshold = options.threshold ?? 128;
+    if (!(threshold >= 0 && threshold <= 255)) {
+      throw new Error(`image() threshold must be between 0 and 255, got ${String(threshold)}`);
+    }
+    this._nodes.push({
+      kind: 'image',
+      gray,
+      width: image.width,
+      height: image.height,
+      printWidth,
+      align: options.align ?? 'left',
+      dither: options.dither ?? 'floyd-steinberg',
+      threshold,
+    });
     return this;
   }
 
