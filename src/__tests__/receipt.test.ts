@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+
 import { Receipt, bold, underline } from '../receipt';
 
 describe(Receipt, () => {

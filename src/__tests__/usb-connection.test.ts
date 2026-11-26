@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 import { Receipt, bold, underline } from '../receipt';
 
 vi.mock('usb', async () => (await import('./helpers/usb-mock.js')).createUsbModule());

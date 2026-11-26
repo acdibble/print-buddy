@@ -10,7 +10,8 @@ Uses pnpm and Node.js ≥24 (see `.nvmrc`).
 pnpm install                          # Install dependencies
 pnpm test                             # Run tests (vitest)
 pnpm typecheck                        # Type-check src/ (tsc --noEmit)
-pnpm lint                             # Lint src/ (eslint)
+pnpm lint                             # Lint src/ (oxlint, type-aware)
+pnpm format                           # Format everything (oxfmt, also sorts imports)
 pnpm build                            # Compile to dist/
 pnpm tsx examples/example.ts          # Console output example
 pnpm tsx examples/example-usb.ts      # USB printer feature showcase
@@ -18,7 +19,7 @@ pnpm tsx examples/example-charset.ts  # CP437 character set on USB printer
 ./scripts/release.sh <major|minor|patch>  # Bump version, tag, push
 ```
 
-CI runs typecheck, test and build. The pre-commit hook runs lint-staged (eslint + prettier). `tsconfig.json` only includes `src/`, so examples are not type-checked.
+CI runs typecheck, lint, format check, test and build. The pre-commit hook runs lint-staged (oxlint + oxfmt). `tsconfig.json` only includes `src/`, so examples are not type-checked.
 
 ## Architecture
 
@@ -82,7 +83,7 @@ This is an ESC/POS thermal printer library for TypeScript/Node.js (ESM only).
 - `src/__tests__/helpers/virtual-printer.ts` interprets the ESC/POS bytes and renders the paper as text (alignment, wrapping, styles, cuts). Prefer it over raw byte snapshots when checking what prints. It throws on unknown commands, so new commands need adding there
 - `src/__tests__/helpers/usb-mock.ts` records bytes; use it with `vi.mock('usb', async () => (await import('./helpers/usb-mock.js')).createUsbModule())`
 - `console-connection.test.ts` captures stdout and replaces ANSI codes with readable tags
-- Tests are excluded from `tsconfig.json` and eslint
+- Tests are excluded from `tsconfig.json` and oxlint (`ignorePatterns` in `.oxlintrc.json`)
 
 ### Adding a Node Type
 
