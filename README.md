@@ -38,7 +38,11 @@ const receipt = new Receipt()
 await printer.print(receipt);
 ```
 
-`Printer` is async disposable, so `await using` closes it when the enclosing block exits, even if printing throws. You can also call `await printer.close()` yourself; closing more than once does nothing.
+Jobs print one at a time, in the order `print` was called, so concurrent calls never mix their output. The printer connects when a job is queued and disconnects once the queue is empty, so a long-running process doesn't hold the printer between jobs. If a job fails, the next one reconnects, so a printer that was offline or unplugged works again on the next job.
+
+On USB and network printers, `print` resolves once the printer confirms the job has printed. After each job, print-buddy sends a process ID request (`GS ( H`), which the printer answers only when everything before it has printed. If the printer is offline (cover open, out of paper), it holds the job and prints it once the problem is fixed, so `print` keeps waiting, for up to the profile's `printTimeout` (60 seconds by default). When that runs out, or the connection drops while waiting, `print` rejects with an `UnconfirmedPrintError`. Its `status` says why the printer is offline (`coverOpen`, `paperEnd`, `error`), or is `null` if the printer didn't answer. The job may still print, so don't send it again automatically. A USB printer without a bulk IN endpoint can't answer, so its jobs resolve as soon as they're sent.
+
+`Printer` is async disposable, so `await using` closes it when the enclosing block exits, even if printing throws. Closing waits for queued jobs to finish, and `print` rejects once the printer is closed. You can also call `await printer.close()` yourself; closing more than once does nothing.
 
 ## USB Printer
 
@@ -58,7 +62,7 @@ const printer = await Printer.create(
 );
 ```
 
-`Printer.create` throws a `PrinterNotFoundError` if no USB device matches the vendor and product IDs. Text is encoded as CP437.
+`Printer.create` throws a `PrinterNotFoundError` if no USB device matches the vendor and product IDs. It doesn't open the device; that happens when a job prints, and a job rejects with `PrinterNotFoundError` if the printer was unplugged since. Text is encoded as CP437.
 
 ## Network Printer
 
@@ -80,9 +84,9 @@ const printer = await Printer.create(
 );
 ```
 
-Every print job opens a new connection and closes it when the job is done. A long-running server doesn't hold the printer between jobs, and if the printer is offline, only that job fails and the next one tries again. Jobs sent to the same printer go one at a time. A job that fails rejects with a `NetworkError`.
+Queued jobs share one TCP connection, which closes once the queue is empty. If the printer can't be reached, that job rejects with a `NetworkError` and the next one connects again.
 
-The error classes are exported: `EscposError` is the base class, and `PrinterNotFoundError`, `UsbError`, `NoBulkEndpointError`, `NetworkError` and `UnsupportedFontError` extend it.
+The error classes are exported: `EscposError` is the base class, and `PrinterNotFoundError`, `UsbError`, `NoBulkEndpointError`, `NetworkError`, `UnconfirmedPrintError` and `UnsupportedFontError` extend it.
 
 ### Exposing a USB printer to the network
 
@@ -229,6 +233,7 @@ createUsbProfile({
   productId: number,
   endpoint?: number,   // bulk OUT endpoint; auto-detected if omitted
   timeout?: number,    // default: 2000ms
+  printTimeout?: number, // wait for the printer to confirm a job; default: 60000ms
   columnsPerFont: { FontA: number, FontB: number },
 })
 
@@ -236,7 +241,8 @@ createUsbProfile({
 createNetworkProfile({
   host: string,
   port?: number,       // default: 9100
-  timeout?: number,    // idle timeout per job; default: 5000ms
+  timeout?: number,    // idle timeout while connecting or sending; default: 5000ms
+  printTimeout?: number, // wait for the printer to confirm a job; default: 60000ms
   columnsPerFont: { FontA: number, FontB: number },
 })
 

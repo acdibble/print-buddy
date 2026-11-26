@@ -30,7 +30,8 @@ const FONT_A_DOTS = 12;
  * Abstract base class for printer connections with visitor pattern
  *
  * All connection types (USB, Console, Network) extend this class
- * and implement the visit methods for each node type.
+ * and implement the visit methods for each node type. Jobs are not queued
+ * here: `Printer` runs them one at a time and opens and closes the connection.
  */
 export abstract class PrinterConnection {
   protected width: number = 32;
@@ -152,7 +153,13 @@ export abstract class PrinterConnection {
   protected abstract visitPartialCut(node: PartialCutNode): Promise<void>;
 
   /**
-   * Close the connection
+   * Open the connection. `Printer` calls it before the first job in its
+   * queue, and `close` once the queue is empty or a job failed.
+   */
+  abstract open(): Promise<void>;
+
+  /**
+   * Close the connection. It is opened again before the next job.
    */
   abstract close(): Promise<void>;
 }

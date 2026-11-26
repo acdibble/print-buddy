@@ -4,6 +4,7 @@ import {
   PrinterConnection,
   UsbConnection,
 } from './connections/index.js';
+import { EscposError } from './errors.js';
 import { PrinterProfile } from './printer-profile.js';
 import { Receipt } from './receipt.js';
 
@@ -12,6 +13,11 @@ import { Receipt } from './receipt.js';
  *
  * The Printer represents a thermal printer connected to the computer.
  * It delegates receipt printing to the underlying connection.
+ *
+ * Jobs print one at a time, in the order `print` was called. The connection
+ * is opened for the first job in the queue and closed once the queue is
+ * empty, so the printer isn't held between batches. A failed job also closes
+ * it, and the next job opens a fresh connection.
  *
  * Printers are async disposable: `await using` closes the printer when the
  * enclosing block exits, even if printing throws.
@@ -26,7 +32,10 @@ import { Receipt } from './receipt.js';
  */
 export class Printer implements AsyncDisposable {
   private connection: PrinterConnection;
-  private closing: Promise<void> | null = null;
+  private queue: Promise<void> = Promise.resolve();
+  private pending = 0;
+  private connected = false;
+  private closed = false;
 
   private constructor(connection: PrinterConnection) {
     this.connection = connection;
@@ -45,14 +54,23 @@ export class Printer implements AsyncDisposable {
 
     switch (profile.connectionData.type) {
       case 'usb': {
-        const { vendorId, productId, endpoint, timeout } = profile.connectionData;
-        connection = await UsbConnection.open(vendorId, productId, endpoint, timeout, fontAWidth);
+        const { vendorId, productId, endpoint, timeout, printTimeout } = profile.connectionData;
+        const usb = new UsbConnection(
+          vendorId,
+          productId,
+          endpoint,
+          timeout,
+          fontAWidth,
+          printTimeout,
+        );
+        usb.findDevice();
+        connection = usb;
         break;
       }
 
       case 'network': {
-        const { host, port, timeout } = profile.connectionData;
-        connection = new NetworkConnection(host, port, timeout, fontAWidth);
+        const { host, port, timeout, printTimeout } = profile.connectionData;
+        connection = new NetworkConnection(host, port, timeout, fontAWidth, printTimeout);
         break;
       }
 
@@ -66,18 +84,50 @@ export class Printer implements AsyncDisposable {
   }
 
   /**
-   * Print a receipt
+   * Print a receipt once the jobs before it are done. On USB and network
+   * printers it resolves when the printer confirms the job has printed.
+   *
+   * @throws {EscposError} If the printer was closed
+   * @throws {UnconfirmedPrintError} If the printer didn't confirm the job
+   *   within the profile's `printTimeout`. The job may still print.
    */
   async print(receipt: Receipt): Promise<void> {
-    await this.connection.print(receipt);
+    if (this.closed) throw new EscposError('Printer is closed');
+    this.pending++;
+    const job = this.queue.then(() => this.runJob(receipt));
+    this.queue = job.catch(() => {});
+    await job;
+  }
+
+  private async runJob(receipt: Receipt): Promise<void> {
+    let failed = true;
+    try {
+      if (!this.connected) {
+        await this.connection.open();
+        this.connected = true;
+      }
+      await this.connection.print(receipt);
+      failed = false;
+    } finally {
+      this.pending--;
+      if (failed || this.pending === 0) await this.disconnect();
+    }
+  }
+
+  private async disconnect(): Promise<void> {
+    if (!this.connected) return;
+    this.connected = false;
+    await this.connection.close().catch(() => {});
   }
 
   /**
-   * Close the printer connection. Calling it again does nothing.
+   * Stop accepting jobs and wait for the queued ones to finish. The
+   * connection closes when the last one is done. Calling it again does
+   * nothing.
    */
   async close(): Promise<void> {
-    this.closing ??= this.connection.close();
-    await this.closing;
+    this.closed = true;
+    await this.queue;
   }
 
   /**

@@ -10,7 +10,8 @@ vi.mock('usb', async () => (await import('./helpers/usb-mock.js')).createUsbModu
 /** Print a receipt through the real USB connection and render what comes out */
 async function printVirtual(receipt: Receipt, columns = 32): Promise<string> {
   writtenBytes.length = 0;
-  const conn = await UsbConnection.open(0x04b8, 0x0e28, undefined, 2000, columns);
+  const conn = new UsbConnection(0x04b8, 0x0e28, undefined, 2000, columns);
+  await conn.open();
   await conn.print(receipt);
   await conn.close();
   return new VirtualPrinter(columns).write(writtenBytes).render();

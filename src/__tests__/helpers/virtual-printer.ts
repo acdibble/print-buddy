@@ -22,6 +22,8 @@ import { type Bitmap, renderBlocks } from '../../image.js';
  *   sent in bands renders as one. The printer ignores GS v 0 while text is
  *   buffered, so that's a warning too.
  *
+ * - Status requests (DLE EOT, GS ( H) print nothing and are skipped.
+ *
  * Unknown commands throw, so tests fail if the library starts emitting bytes
  * this model doesn't understand.
  */
@@ -60,6 +62,7 @@ function initialState(): State {
 
 const ESC = 0x1b;
 const GS = 0x1d;
+const DLE = 0x10;
 const LF = 0x0a;
 
 const hex = (b: number) => `0x${b.toString(16).padStart(2, '0')}`;
@@ -137,6 +140,14 @@ export class VirtualPrinter {
           i = this.rasterImage(bytes, i, offset);
           continue;
         }
+        if (cmd === 0x28 && bytes[i] === 0x48) {
+          // GS ( H pL pH fn m d1...d4 - request a process ID response
+          i++;
+          const length = arg('GS ( H') + arg('GS ( H') * 256;
+          if (i + length > bytes.length) throw new Error('GS ( H: missing data at end of data');
+          i += length;
+          continue;
+        }
         if (cmd !== 0x56) {
           throw new Error(`Unsupported command GS ${hex(cmd)} at byte ${String(offset)}`);
         }
@@ -148,6 +159,10 @@ export class VirtualPrinter {
           this.warnings.push(`cut while text was still buffered: "${this.bufferedText()}"`);
         }
         this.paper.push({ kind: 'cut', partial: m === 1 || m === 49 || m === 66 });
+      } else if (b === DLE && bytes[i] === 0x04) {
+        // DLE EOT n - real-time status request
+        i++;
+        arg('DLE EOT');
       } else if (b === LF) {
         this.printLine();
       } else if (b === 0x0d) {

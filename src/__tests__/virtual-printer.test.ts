@@ -23,7 +23,8 @@ function disc(size: number) {
 /** Print a receipt through the real USB connection and render what comes out */
 async function printVirtual(receipt: Receipt, columns = 32): Promise<string> {
   writtenBytes.length = 0;
-  const conn = await UsbConnection.open(0x04b8, 0x0e28, undefined, 2000, columns);
+  const conn = new UsbConnection(0x04b8, 0x0e28, undefined, 2000, columns);
+  await conn.open();
   await conn.print(receipt);
   await conn.close();
   return new VirtualPrinter(columns).write(writtenBytes).render();
@@ -219,9 +220,38 @@ describe('UsbConnection output on a virtual printer', () => {
     `);
   });
 
+  it("doesn't send real-time commands hidden in image data", async () => {
+    // Rows that pack to 10 04 02 10 | 05 10 14 00, with 10 05 across the row boundary
+    const rows = [
+      [0x10, 0x04, 0x02, 0x10],
+      [0x05, 0x10, 0x14, 0x00],
+    ];
+    const data = new Uint8Array(32 * 2).fill(255);
+    rows.forEach((bytes, y) =>
+      bytes.forEach((byte, b) => {
+        for (let bit = 0; bit < 8; bit++) {
+          if (byte & (0x80 >> bit)) data[y * 32 + b * 8 + bit] = 0;
+        }
+      }),
+    );
+
+    writtenBytes.length = 0;
+    const conn = new UsbConnection(0x04b8, 0x0e28, undefined, 2000, 32);
+    await conn.open();
+    await conn.print(new Receipt().image({ width: 32, height: 2, data }, { dither: 'threshold' }));
+
+    const start = writtenBytes.findIndex(
+      (b, i) => b === 0x1d && writtenBytes[i + 1] === 0x76 && writtenBytes[i + 2] === 0x30,
+    );
+    expect(writtenBytes.slice(start + 8, start + 16)).toEqual([
+      0x00, 0x04, 0x02, 0x00, 0x05, 0x00, 0x14, 0x00,
+    ]);
+  });
+
   it('sends tall images in bands that print as one image', async () => {
     writtenBytes.length = 0;
-    const conn = await UsbConnection.open(0x04b8, 0x0e28, undefined, 2000, 32);
+    const conn = new UsbConnection(0x04b8, 0x0e28, undefined, 2000, 32);
+    await conn.open();
     const data = new Uint8Array(16 * 600);
     await conn.print(
       new Receipt().image({ width: 16, height: 600, data }, { dither: 'threshold' }),

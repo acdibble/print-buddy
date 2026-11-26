@@ -4,9 +4,11 @@ export {
   NetworkError,
   NoBulkEndpointError,
   PrinterNotFoundError,
+  UnconfirmedPrintError,
   UnsupportedFontError,
   UsbError,
 } from './errors.js';
+export { type PrinterStatus } from './status.js';
 
 // Images
 export { type Dither, type RawImage } from './image.js';

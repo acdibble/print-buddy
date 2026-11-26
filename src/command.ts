@@ -28,8 +28,18 @@ export const UNDERLINE_1DOT = new Uint8Array([0x1b, 0x2d, 0x01]);
 /** 2-dot underline (ESC - 2) */
 export const UNDERLINE_2DOT = new Uint8Array([0x1b, 0x2d, 0x02]);
 
+const DLE = 0x10;
+/** Second bytes of the real-time commands: DLE EOT, DLE ENQ, DLE DC4 */
+const REAL_TIME_FUNCTIONS = new Set([0x04, 0x05, 0x14]);
+
 /**
  * Print a raster bit image at normal size (GS v 0 m xL xH yL yH d1...dk)
+ *
+ * The printer acts on real-time commands (DLE EOT, DLE ENQ, DLE DC4) as soon
+ * as it receives them, even inside image data, so `10 04`, `10 05` and
+ * `10 14` in the data would send status, recover from errors, pulse the
+ * drawer or clear the buffer. Each such `10` is sent as `00` instead, which
+ * drops one black dot.
  *
  * @param bytesPerRow Width in bytes (8 dots each)
  * @param rows Height in dots
@@ -48,6 +58,9 @@ export function rasterImage(bytesPerRow: number, rows: number, data: Uint8Array)
     rows >> 8,
   ]);
   command.set(data, 8);
+  for (let i = 8; i < command.length - 1; i++) {
+    if (command[i] === DLE && REAL_TIME_FUNCTIONS.has(command[i + 1])) command[i] = 0x00;
+  }
   return command;
 }
 
@@ -71,3 +84,16 @@ export const FLIP_ON = new Uint8Array([0x1b, 0x7b, 0x01]);
 
 /** Turn upside-down mode off (ESC { 0) */
 export const FLIP_OFF = new Uint8Array([0x1b, 0x7b, 0x00]);
+
+/** Transmit the offline cause status in real time (DLE EOT 2) */
+export const OFFLINE_CAUSE_REQUEST = new Uint8Array([0x10, 0x04, 0x02]);
+
+/**
+ * Request a process ID response (GS ( H fn=48). The printer replies
+ * `37 22 <id> 00` once everything sent before it has printed.
+ *
+ * @param id 4 ASCII digits
+ */
+export function processIdRequest(id: string): Uint8Array {
+  return new Uint8Array([0x1d, 0x28, 0x48, 0x06, 0x00, 0x30, 0x30, ...Buffer.from(id, 'ascii')]);
+}

@@ -1,11 +1,14 @@
 type Font = 'FontA' | 'FontB';
 
+const DEFAULT_PRINT_TIMEOUT = 60_000;
+
 export interface UsbConnectionData {
   type: 'usb';
   vendorId: number;
   productId: number;
   endpoint?: number;
   timeout: number;
+  printTimeout: number;
 }
 
 export interface NetworkConnectionData {
@@ -13,6 +16,7 @@ export interface NetworkConnectionData {
   host: string;
   port: number;
   timeout: number;
+  printTimeout: number;
 }
 
 export interface ConsoleConnectionData {
@@ -34,6 +38,8 @@ export interface UsbProfileOptions {
   productId: number;
   endpoint?: number;
   timeout?: number;
+  /** Milliseconds to wait for the printer to confirm a job, including while it's offline (default: 60000) */
+  printTimeout?: number;
   columnsPerFont: Record<Font, number>;
 }
 
@@ -41,6 +47,8 @@ export interface NetworkProfileOptions {
   host: string;
   port?: number;
   timeout?: number;
+  /** Milliseconds to wait for the printer to confirm a job, including while it's offline (default: 60000) */
+  printTimeout?: number;
   columnsPerFont: Record<Font, number>;
 }
 
@@ -56,6 +64,7 @@ export function createUsbProfile(options: UsbProfileOptions): PrinterProfile {
       productId: options.productId,
       endpoint: options.endpoint,
       timeout: options.timeout ?? 2000,
+      printTimeout: options.printTimeout ?? DEFAULT_PRINT_TIMEOUT,
     },
     columnsPerFont: options.columnsPerFont,
   };
@@ -68,6 +77,7 @@ export function createNetworkProfile(options: NetworkProfileOptions): PrinterPro
       host: options.host,
       port: options.port ?? 9100,
       timeout: options.timeout ?? 5000,
+      printTimeout: options.printTimeout ?? DEFAULT_PRINT_TIMEOUT,
     },
     columnsPerFont: options.columnsPerFont,
   };

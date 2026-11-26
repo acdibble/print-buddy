@@ -10,7 +10,7 @@
   "env": {
     "builtin": true
   },
-  "ignorePatterns": ["dist", "node_modules", "*.js", "src/__tests__", "examples"],
+  "ignorePatterns": ["dist", "node_modules", "*.js", "src/__tests__", "examples", "scripts"],
   "rules": {
     "constructor-super": "error",
     "for-direction": "error",

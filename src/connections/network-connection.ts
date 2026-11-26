@@ -1,4 +1,5 @@
-import { connect } from 'node:net';
+import { once } from 'node:events';
+import { connect, Socket } from 'node:net';
 
 import { NetworkError } from '../errors.js';
 import { Receipt } from '../receipt.js';
@@ -7,42 +8,45 @@ import { EscPosConnection } from './escpos-connection.js';
 /**
  * Network connection for thermal printers (raw TCP, usually port 9100)
  *
- * Each print job opens its own socket, sends the whole job and closes the
- * socket, so a long-running process doesn't hold the printer between jobs
- * and a printer that was offline works again on the next job. Jobs on the
- * same connection are sent one at a time.
+ * `open` connects and `close` disconnects; `Printer` keeps one socket for as
+ * long as it has jobs queued, so a long-running process doesn't hold the
+ * printer between batches. Each job is collected in memory and sent in one
+ * write. If the socket fails or the printer closes it, the next job
+ * connects again.
  */
 export class NetworkConnection extends EscPosConnection {
   private chunks: Uint8Array[] = [];
-  private queue: Promise<void> = Promise.resolve();
+  private socket: Socket | null = null;
 
   /**
    * @param host Printer (or print server) hostname or IP address
    * @param port TCP port (default: 9100)
-   * @param timeout Milliseconds the socket may sit idle before the job fails (default: 5000)
+   * @param timeout Milliseconds the socket may sit idle before it is dropped, failing a job that is connecting or sending (default: 5000)
    * @param width Printer column width (default: 32)
+   * @param printTimeout Milliseconds to wait for the printer to confirm a job (default: 60000)
    */
   constructor(
     private readonly host: string,
     private readonly port: number = 9100,
     private readonly timeout: number = 5000,
     width: number = 32,
+    printTimeout?: number,
   ) {
-    super(width);
+    super(width, printTimeout);
+  }
+
+  private get address(): string {
+    return `${this.host}:${String(this.port)}`;
+  }
+
+  protected async connect(): Promise<void> {
+    this.replaceSocket(await this.createSocket());
   }
 
   async print(receipt: Receipt): Promise<void> {
-    const job = this.queue.then(() => this.printJob(receipt));
-    // Keep the queue going after a failed job; the caller still sees the error
-    this.queue = job.catch(() => {});
-    return job;
-  }
-
-  private async printJob(receipt: Receipt): Promise<void> {
     this.chunks = [];
     try {
       await super.print(receipt);
-      await this.send(Buffer.concat(this.chunks));
     } finally {
       this.chunks = [];
     }
@@ -52,54 +56,74 @@ export class NetworkConnection extends EscPosConnection {
     this.chunks.push(data);
   }
 
-  private send(data: Buffer): Promise<void> {
-    const { promise, resolve, reject } = Promise.withResolvers<void>();
-    const address = `${this.host}:${String(this.port)}`;
-    let flushed = false;
+  protected async flush(): Promise<void> {
+    const data = Buffer.concat(this.chunks);
+    this.chunks = [];
+    await this.send(data);
+  }
 
+  private replaceSocket(socket: Socket | null): void {
+    const old = this.socket;
+    this.socket = socket;
+    old?.destroy();
+  }
+
+  private async createSocket(): Promise<Socket> {
     const socket = connect({ host: this.host, port: this.port });
-    socket.setTimeout(this.timeout);
-
-    socket.on('connect', () => {
-      socket.end(data, () => {
-        flushed = true;
-      });
+    socket.on('error', () => {});
+    socket.on('data', (data: Buffer) => {
+      this.receive(data);
     });
-
-    // The printer may report status bytes; read and discard them so the
-    // socket closes cleanly
-    socket.resume();
-
-    socket.on('timeout', () => {
-      if (flushed) {
-        // Everything was sent; the other end just hasn't closed its side
-        socket.destroy();
-      } else {
-        socket.destroy(new NetworkError(`Timed out sending to ${address}`));
+    socket.on('close', () => {
+      if (this.socket === socket) {
+        this.connectionLost(new NetworkError(`${this.address} closed the connection`));
       }
     });
-
-    socket.on('error', (err) => {
-      reject(
-        err instanceof NetworkError
-          ? err
-          : new NetworkError(`Failed to print to ${address}: ${err.message}`),
-      );
+    socket.setTimeout(this.timeout, () => {
+      if (this.socket === socket && this.waitingForPrinter) return;
+      socket.destroy(new NetworkError(`Timed out waiting for ${this.address}`));
     });
 
-    socket.on('close', (hadError) => {
-      if (hadError) return; // 'error' already rejected
-      if (flushed) resolve();
-      else reject(new NetworkError(`${address} closed the connection before the job was sent`));
-    });
+    try {
+      await once(socket, 'connect');
+    } catch (err) {
+      socket.destroy();
+      throw this.networkError('connect to', err);
+    }
+    return socket;
+  }
 
-    return promise;
+  private async send(data: Buffer): Promise<void> {
+    let socket = this.socket;
+    if (!socket?.writable) {
+      this.replaceSocket(null);
+      socket = await this.createSocket();
+      this.replaceSocket(socket);
+    }
+
+    const { promise, resolve, reject } = Promise.withResolvers<void>();
+    socket.write(data, (err) => {
+      if (err) reject(this.networkError('print to', err));
+      else resolve();
+    });
+    await promise;
+  }
+
+  private networkError(action: string, err: unknown): NetworkError {
+    if (err instanceof NetworkError) return err;
+    const message = err instanceof Error ? err.message : String(err);
+    return new NetworkError(`Failed to ${action} ${this.address}: ${message}`);
   }
 
   /**
-   * Wait for queued jobs to finish (sockets are closed after every job)
+   * End the socket and wait for it to close. Never throws.
    */
   async close(): Promise<void> {
-    await this.queue;
+    const socket = this.socket;
+    this.socket = null;
+    if (!socket || socket.destroyed) return;
+
+    socket.end();
+    await once(socket, 'close').catch(() => {});
   }
 }

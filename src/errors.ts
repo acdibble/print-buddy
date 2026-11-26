@@ -1,3 +1,5 @@
+import type { PrinterStatus } from './status.js';
+
 /**
  * Base error class for ESC/POS errors
  */
@@ -62,5 +64,24 @@ export class NetworkError extends EscposError {
   constructor(message: string) {
     super(`Network error: ${message}`);
     this.name = 'NetworkError';
+  }
+}
+
+/**
+ * Error when the printer didn't confirm a job it was sent
+ *
+ * The job may still print, for example once the cover is closed, so don't
+ * send it again automatically.
+ */
+export class UnconfirmedPrintError extends EscposError {
+  constructor(
+    message: string,
+    /** The printer's offline cause, or `null` if it didn't answer */
+    readonly status: PrinterStatus | null,
+    options?: ErrorOptions,
+  ) {
+    super(message);
+    this.name = 'UnconfirmedPrintError';
+    if (options?.cause !== undefined) this.cause = options.cause;
   }
 }

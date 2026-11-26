@@ -80,5 +80,7 @@ export class ConsoleConnection extends PrinterConnection {
     process.stdout.write(ANSI.reset);
   }
 
+  async open(): Promise<void> {}
+
   async close(): Promise<void> {}
 }
