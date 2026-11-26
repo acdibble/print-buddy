@@ -3,6 +3,7 @@ export {
   EscposError,
   NetworkError,
   NoBulkEndpointError,
+  PrinterNotFoundError,
   UnsupportedFontError,
   UsbError,
 } from './errors.js';

@@ -73,7 +73,7 @@ This is an ESC/POS thermal printer library for TypeScript/Node.js (ESM only).
 
 **`src/printer.ts`** - Main printer interface
 
-- `Printer.create(profile)` builds the connection; returns `null` if the USB device isn't found (network profiles never return `null`; they connect per job)
+- `Printer.create(profile)` builds the connection; throws `PrinterNotFoundError` if the USB device isn't found (network profiles don't connect until a job prints)
 - Delegates `print(receipt)` and `close()` to the connection; `close()` only closes the connection once
 - Implements `AsyncDisposable` (`Symbol.asyncDispose` calls `close()`), so `await using printer = await Printer.create(...)` works; the examples use it
 
@@ -88,7 +88,7 @@ This is an ESC/POS thermal printer library for TypeScript/Node.js (ESM only).
 - `getUsbProfile(model, paperWidth = '80mm')` and `getNetworkProfile(model, { host, port?, timeout? }, paperWidth = '80mm')`; only model is `TMT20III`
 - Column counts per paper width: 80mm → FontA 48 / FontB 64, 58mm → FontA 35 / FontB 46
 
-**`src/command.ts`** / **`src/errors.ts`** - ESC/POS byte constants and error classes (`EscposError` base, `UsbError`, `NoBulkEndpointError`, `NetworkError`), all exported from `src/index.ts`
+**`src/command.ts`** / **`src/errors.ts`** - ESC/POS byte constants and error classes (`EscposError` base, `PrinterNotFoundError`, `UsbError`, `NoBulkEndpointError`, `NetworkError`), all exported from `src/index.ts`
 
 ### Testing
 

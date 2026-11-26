@@ -205,8 +205,8 @@ describe('Printer with a network profile', () => {
       }),
     );
 
-    await printer!.print(new Receipt().line('Hi', { align: 'center' }));
-    await printer!.close();
+    await printer.print(new Receipt().line('Hi', { align: 'center' }));
+    await printer.close();
     const [job] = await fake.waitForJobs(1);
 
     expect(render(job, 48).split('\n')[1]).toBe(`│${' '.repeat(23)}Hi${' '.repeat(23)}│`);

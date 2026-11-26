@@ -5,7 +5,12 @@ import { Receipt, bold, underline } from '../receipt.js';
 vi.mock('usb', async () => (await import('./helpers/usb-mock.js')).createUsbModule());
 
 // Import after mocking
+import * as usb from 'usb';
+
 import { UsbConnection } from '../connections/usb-connection.js';
+import { PrinterNotFoundError } from '../errors.js';
+import { getUsbProfile } from '../printer-model.js';
+import { Printer } from '../printer.js';
 import { writtenBytes } from './helpers/usb-mock.js';
 
 describe('UsbConnection', () => {
@@ -13,11 +18,30 @@ describe('UsbConnection', () => {
     writtenBytes.length = 0;
   });
 
+  it('throws PrinterNotFoundError when no device matches', async () => {
+    vi.mocked(usb.findByIds).mockReturnValueOnce(undefined);
+
+    const error = await UsbConnection.open(0x04b8, 0x0e28).catch((err: unknown) => err);
+
+    expect(error).toBeInstanceOf(PrinterNotFoundError);
+    expect(error).toMatchObject({
+      message: 'No USB printer found with vendor ID 0x04b8 and product ID 0x0e28',
+      vendorId: 0x04b8,
+      productId: 0x0e28,
+    });
+  });
+
+  it('makes Printer.create throw when no device matches', async () => {
+    vi.mocked(usb.findByIds).mockReturnValueOnce(undefined);
+
+    await expect(Printer.create(getUsbProfile('TMT20III'))).rejects.toThrow(PrinterNotFoundError);
+  });
+
   it('renders plain text', async () => {
     const conn = await UsbConnection.open(0x04b8, 0x0e28, undefined, 2000, 32);
     const receipt = new Receipt().line('Hello');
 
-    await conn!.print(receipt);
+    await conn.print(receipt);
 
     expect(writtenBytes).toMatchSnapshot();
   });
@@ -26,7 +50,7 @@ describe('UsbConnection', () => {
     const conn = await UsbConnection.open(0x04b8, 0x0e28, undefined, 2000, 32);
     const receipt = new Receipt().line(bold('Bold'));
 
-    await conn!.print(receipt);
+    await conn.print(receipt);
 
     expect(writtenBytes).toMatchSnapshot();
   });
@@ -35,7 +59,7 @@ describe('UsbConnection', () => {
     const conn = await UsbConnection.open(0x04b8, 0x0e28, undefined, 2000, 32);
     const receipt = new Receipt().line(underline('Underline'));
 
-    await conn!.print(receipt);
+    await conn.print(receipt);
 
     expect(writtenBytes).toMatchSnapshot();
   });
@@ -44,7 +68,7 @@ describe('UsbConnection', () => {
     const conn = await UsbConnection.open(0x04b8, 0x0e28, undefined, 2000, 32);
     const receipt = new Receipt().line(bold(underline('Both')));
 
-    await conn!.print(receipt);
+    await conn.print(receipt);
 
     expect(writtenBytes).toMatchSnapshot();
   });
@@ -53,7 +77,7 @@ describe('UsbConnection', () => {
     const conn = await UsbConnection.open(0x04b8, 0x0e28, undefined, 2000, 32);
     const receipt = new Receipt().line('Test').cut();
 
-    await conn!.print(receipt);
+    await conn.print(receipt);
 
     expect(writtenBytes).toMatchSnapshot();
   });
@@ -62,7 +86,7 @@ describe('UsbConnection', () => {
     const conn = await UsbConnection.open(0x04b8, 0x0e28, undefined, 2000, 32);
     const receipt = new Receipt().line('Test').partialCut();
 
-    await conn!.print(receipt);
+    await conn.print(receipt);
 
     expect(writtenBytes).toMatchSnapshot();
   });
@@ -71,7 +95,7 @@ describe('UsbConnection', () => {
     const conn = await UsbConnection.open(0x04b8, 0x0e28, undefined, 2000, 32);
     const receipt = new Receipt().line('Test').feed();
 
-    await conn!.print(receipt);
+    await conn.print(receipt);
 
     expect(writtenBytes).toMatchSnapshot();
   });
@@ -80,7 +104,7 @@ describe('UsbConnection', () => {
     const conn = await UsbConnection.open(0x04b8, 0x0e28, undefined, 2000, 32);
     const receipt = new Receipt().line('Centered', { align: 'center' }).line('Left aligned');
 
-    await conn!.print(receipt);
+    await conn.print(receipt);
 
     expect(writtenBytes).toMatchSnapshot();
   });
@@ -89,7 +113,7 @@ describe('UsbConnection', () => {
     const conn = await UsbConnection.open(0x04b8, 0x0e28, undefined, 2000, 32);
     const receipt = new Receipt().line('Right', { align: 'right' }).line('Left');
 
-    await conn!.print(receipt);
+    await conn.print(receipt);
 
     expect(writtenBytes).toMatchSnapshot();
   });
@@ -113,7 +137,7 @@ describe('UsbConnection', () => {
       .line(bold(underline('Total: $5.50')))
       .cut();
 
-    await conn!.print(receipt);
+    await conn.print(receipt);
 
     expect(writtenBytes).toMatchSnapshot();
   });

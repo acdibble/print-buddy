@@ -6,11 +6,6 @@ async function main() {
   const profile = getUsbProfile('TMT20III');
   await using printer = await Printer.create(profile);
 
-  if (!printer) {
-    console.error('Printer not found! Make sure it is connected and powered on.');
-    return;
-  }
-
   console.log('Connected to printer!');
 
   const receipt = new Receipt()

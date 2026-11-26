@@ -22,7 +22,7 @@ import { Receipt } from './receipt.js';
  * const receipt = new Receipt()
  *   .line(bold('Hello World!'))
  *   .cut();
- * await printer?.print(receipt);
+ * await printer.print(receipt);
  */
 export class Printer implements AsyncDisposable {
   private connection: PrinterConnection;
@@ -35,9 +35,10 @@ export class Printer implements AsyncDisposable {
   /**
    * Create a new printer with the given profile
    *
-   * @returns The printer instance, or null if the device was not found (USB only)
+   * @throws {PrinterNotFoundError} If no USB device matches the profile's
+   *   vendor and product IDs. Network profiles don't connect until a job prints.
    */
-  static async create(profile: PrinterProfile): Promise<Printer | null> {
+  static async create(profile: PrinterProfile): Promise<Printer> {
     const fontAWidth = profile.columnsPerFont.FontA;
 
     let connection: PrinterConnection;
@@ -45,17 +46,7 @@ export class Printer implements AsyncDisposable {
     switch (profile.connectionData.type) {
       case 'usb': {
         const { vendorId, productId, endpoint, timeout } = profile.connectionData;
-        const usbConn = await UsbConnection.open(
-          vendorId,
-          productId,
-          endpoint,
-          timeout,
-          fontAWidth,
-        );
-        if (!usbConn) {
-          return null;
-        }
-        connection = usbConn;
+        connection = await UsbConnection.open(vendorId, productId, endpoint, timeout, fontAWidth);
         break;
       }
 

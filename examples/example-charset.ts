@@ -2,10 +2,6 @@ import { bold, getUsbProfile, Printer, Receipt } from '../src/index.js';
 
 async function main() {
   await using printer = await Printer.create(getUsbProfile('TMT20III'));
-  if (!printer) {
-    console.error('Printer not found');
-    return;
-  }
 
   // CP437 (PC437) character set - default for Epson TM-T20III
   const receipt = new Receipt()

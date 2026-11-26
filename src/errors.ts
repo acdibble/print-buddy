@@ -18,6 +18,23 @@ export class UnsupportedFontError extends EscposError {
   }
 }
 
+const usbId = (id: number) => `0x${id.toString(16).padStart(4, '0')}`;
+
+/**
+ * Error when no USB device matches the printer's vendor and product IDs
+ */
+export class PrinterNotFoundError extends EscposError {
+  constructor(
+    readonly vendorId: number,
+    readonly productId: number,
+  ) {
+    super(
+      `No USB printer found with vendor ID ${usbId(vendorId)} and product ID ${usbId(productId)}`,
+    );
+    this.name = 'PrinterNotFoundError';
+  }
+}
+
 /**
  * Error when no bulk endpoint is found on the USB device
  */

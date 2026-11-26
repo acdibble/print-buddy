@@ -15,7 +15,7 @@ describe('Printer', () => {
 
     {
       await using printer = await Printer.create(createConsoleProfile());
-      expect(printer).not.toBeNull();
+      expect(printer).toBeInstanceOf(Printer);
       expect(close).not.toHaveBeenCalled();
     }
 
@@ -28,7 +28,7 @@ describe('Printer', () => {
 
     const run = async () => {
       await using printer = await Printer.create(createConsoleProfile());
-      await printer!.print(new Receipt().line('Hello'));
+      await printer.print(new Receipt().line('Hello'));
     };
 
     await expect(run()).rejects.toThrow('jammed');
@@ -40,8 +40,8 @@ describe('Printer', () => {
 
     {
       await using printer = await Printer.create(createConsoleProfile());
-      await printer!.close();
-      await printer!.close();
+      await printer.close();
+      await printer.close();
     }
 
     expect(close).toHaveBeenCalledOnce();

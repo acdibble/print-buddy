@@ -5,11 +5,6 @@ async function main() {
   const profile = createConsoleProfile();
   await using printer = await Printer.create(profile);
 
-  if (!printer) {
-    console.error('Failed to create printer');
-    return;
-  }
-
   console.log('=== Console Printer Test ===\n');
 
   const receipt = new Receipt()

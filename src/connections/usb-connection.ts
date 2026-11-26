@@ -1,6 +1,6 @@
 import * as usb from 'usb';
 
-import { NoBulkEndpointError, UsbError } from '../errors.js';
+import { NoBulkEndpointError, PrinterNotFoundError, UsbError } from '../errors.js';
 import { EscPosConnection } from './escpos-connection.js';
 
 // libusb transfer type constant for bulk transfers
@@ -31,6 +31,7 @@ export class UsbConnection extends EscPosConnection {
    * @param endpointAddress Optional endpoint address (auto-detected if not provided)
    * @param timeout Timeout in milliseconds (default: 2000)
    * @param width Printer column width (default: 32)
+   * @throws {PrinterNotFoundError} If no device matches the vendor and product IDs
    */
   static async open(
     vendorId: number,
@@ -38,10 +39,10 @@ export class UsbConnection extends EscPosConnection {
     endpointAddress?: number,
     timeout: number = 2000,
     width: number = 32,
-  ): Promise<UsbConnection | null> {
+  ): Promise<UsbConnection> {
     const device = usb.findByIds(vendorId, productId);
     if (!device) {
-      return null;
+      throw new PrinterNotFoundError(vendorId, productId);
     }
 
     const connection = new UsbConnection(device, timeout, width);

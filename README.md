@@ -56,13 +56,9 @@ const printer = await Printer.create(
     columnsPerFont: { FontA: 48, FontB: 64 },
   }),
 );
-
-if (!printer) {
-  throw new Error('Printer not found');
-}
 ```
 
-`Printer.create` returns `null` if no USB device matches the vendor and product IDs. Text is encoded as CP437.
+`Printer.create` throws a `PrinterNotFoundError` if no USB device matches the vendor and product IDs. Text is encoded as CP437.
 
 ## Network Printer
 
@@ -86,7 +82,7 @@ const printer = await Printer.create(
 
 Every print job opens a new connection and closes it when the job is done. A long-running server doesn't hold the printer between jobs, and if the printer is offline, only that job fails and the next one tries again. Jobs sent to the same printer go one at a time. A job that fails rejects with a `NetworkError`.
 
-The error classes are exported: `EscposError` is the base class, and `UsbError`, `NoBulkEndpointError`, `NetworkError` and `UnsupportedFontError` extend it.
+The error classes are exported: `EscposError` is the base class, and `PrinterNotFoundError`, `UsbError`, `NoBulkEndpointError`, `NetworkError` and `UnsupportedFontError` extend it.
 
 ### Exposing a USB printer to the network
 
