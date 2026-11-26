@@ -44,11 +44,21 @@ This is an ESC/POS thermal printer library for TypeScript/Node.js (ESM only).
 - `width` is the Font A column count, passed to `layout()`
 - Owns inline styling: `bold`/`underline`/`fontB` go through `withStyle`, which tracks the active `TextStyle` and restores the previous style afterwards (so outer styles survive nested ones). Connections implement only `applyStyle(next, previous)`
 
-**`src/connections/usb-connection.ts`** - USB thermal printer output
+**`src/connections/escpos-connection.ts`** - Shared ESC/POS output
 
-- Emits ESC/POS commands from `src/command.ts`; text encoded as CP437 via `iconv-lite`
+- `EscPosConnection` implements every visitor by emitting ESC/POS commands from `src/command.ts`; text encoded as CP437 via `iconv-lite`
 - `applyStyle` sends only the commands for styles that changed; `visitLine` sets alignment/flip before the content and resets them after the line feed
+- Subclasses only implement the transport: `write(bytes)` and `close()`
+
+**`src/connections/usb-connection.ts`** - USB transport (`EscPosConnection` subclass)
+
 - Uses the `usb` package; auto-detects the bulk OUT endpoint on interface 0
+
+**`src/connections/network-connection.ts`** - Raw TCP transport, port 9100 by default (`EscPosConnection` subclass)
+
+- `write` collects the job's bytes in memory, then `print` opens a socket, sends them in one write and closes it. Each job gets its own connection
+- Jobs are queued so concurrent `print` calls don't interleave; `close()` waits for the queue to drain
+- Failures reject with `NetworkError`. An idle timeout after all bytes were flushed counts as success, because the peer might never close its side
 
 **`src/connections/console-connection.ts`** - ANSI terminal output
 
@@ -63,32 +73,34 @@ This is an ESC/POS thermal printer library for TypeScript/Node.js (ESM only).
 
 **`src/printer.ts`** - Main printer interface
 
-- `Printer.create(profile)` builds the connection; returns `null` if the USB device isn't found
+- `Printer.create(profile)` builds the connection; returns `null` if the USB device isn't found (network profiles never return `null`; they connect per job)
 - Delegates `print(receipt)` and `close()` to the connection
 
 **`src/printer-profile.ts`** - Configuration
 
 - `createUsbProfile(options)`: `vendorId`, `productId`, optional `endpoint`/`timeout`, required `columnsPerFont: { FontA, FontB }`
+- `createNetworkProfile(options)`: `host`, optional `port` (9100) / `timeout` (5000ms), required `columnsPerFont`
 - `createConsoleProfile()`: no options, 48 columns
 
 **`src/printer-model.ts`** - Printer presets
 
-- `getUsbProfile(model, paperWidth = '80mm')`; only model is `TMT20III`
+- `getUsbProfile(model, paperWidth = '80mm')` and `getNetworkProfile(model, { host, port?, timeout? }, paperWidth = '80mm')`; only model is `TMT20III`
 - Column counts per paper width: 80mm → FontA 48 / FontB 64, 58mm → FontA 35 / FontB 46
 
-**`src/command.ts`** / **`src/errors.ts`** - ESC/POS byte constants and error classes (`UsbError`, `NoBulkEndpointError`)
+**`src/command.ts`** / **`src/errors.ts`** - ESC/POS byte constants and error classes (`EscposError` base, `UsbError`, `NoBulkEndpointError`, `NetworkError`), all exported from `src/index.ts`
 
 ### Testing
 
 - `src/__tests__/helpers/virtual-printer.ts` interprets the ESC/POS bytes and renders the paper as text (alignment, wrapping, styles, cuts). Prefer it over raw byte snapshots when checking what prints. It throws on unknown commands, so new commands need adding there
 - `src/__tests__/helpers/usb-mock.ts` records bytes; use it with `vi.mock('usb', async () => (await import('./helpers/usb-mock.js')).createUsbModule())`
+- `network-connection.test.ts` runs a local TCP server as a fake printer and checks the bytes match the USB connection's
 - `console-connection.test.ts` captures stdout and replaces ANSI codes with readable tags
 - Tests are excluded from `tsconfig.json` and oxlint (`ignorePatterns` in `.oxlintrc.json`)
 
 ### Adding a Node Type
 
 1. Add the node type to the `InlineNode` or `BlockNode` union (plus a helper or `Receipt` method) in `receipt.ts`
-2. Add a `case` in `PrinterConnection.visit()` and an abstract `visitXxx`, then implement it in both `UsbConnection` and `ConsoleConnection`
+2. Add a `case` in `PrinterConnection.visit()` and an abstract `visitXxx`, then implement it in both `EscPosConnection` and `ConsoleConnection`
 3. Exceptions: a node that can be expressed as lines is a `LayoutNode` handled in `layout.ts` (no visitors). A new character style is a `TextStyle` field plus a `withStyle` case. Inline nodes also need `textOf` and `slice` in `layout.ts`
 4. Export it from `src/index.ts` and add tests (USB tests are byte-stream snapshots with `usb` mocked)
 

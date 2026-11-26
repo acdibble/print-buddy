@@ -63,6 +63,41 @@ if (!printer) {
 
 `Printer.create` returns `null` if no USB device matches the vendor and product IDs. Text is encoded as CP437.
 
+## Network Printer
+
+Network receipt printers take raw ESC/POS bytes over TCP, usually on port 9100. `NetworkConnection` sends the same bytes as the USB connection.
+
+```typescript
+import { Printer, createNetworkProfile, getNetworkProfile } from 'print-buddy';
+
+// Use a preset printer model
+const printer = await Printer.create(getNetworkProfile('TMT20III', { host: '192.168.1.50' }));
+
+// Or configure manually
+const printer = await Printer.create(
+  createNetworkProfile({
+    host: 'printer.local',
+    port: 9100,
+    columnsPerFont: { FontA: 48, FontB: 64 },
+  }),
+);
+```
+
+Every print job opens a new connection and closes it when the job is done. A long-running server doesn't hold the printer between jobs, and if the printer is offline, only that job fails and the next one tries again. Jobs sent to the same printer go one at a time. A job that fails rejects with a `NetworkError`.
+
+The error classes are exported: `EscposError` is the base class, and `UsbError`, `NoBulkEndpointError`, `NetworkError` and `UnsupportedFontError` extend it.
+
+### Exposing a USB printer to the network
+
+A USB printer connected to a Linux machine such as a Raspberry Pi can be shared on port 9100. Linux's `usblp` driver exposes the printer as `/dev/usb/lp0`, and `socat` forwards each connection to it:
+
+```bash
+sudo apt install socat
+socat TCP-LISTEN:9100,fork,reuseaddr OPEN:/dev/usb/lp0,wronly
+```
+
+To keep it running, make it a systemd service. Port 9100 has no authentication or encryption, so keep it on a trusted network or reach it over a VPN such as WireGuard or Tailscale.
+
 ## API
 
 ### Receipt Builder
@@ -175,8 +210,17 @@ createUsbProfile({
   columnsPerFont: { FontA: number, FontB: number },
 })
 
-// Preset profile for a known model
+// Network printer (raw TCP)
+createNetworkProfile({
+  host: string,
+  port?: number,       // default: 9100
+  timeout?: number,    // idle timeout per job; default: 5000ms
+  columnsPerFont: { FontA: number, FontB: number },
+})
+
+// Preset profiles for a known model
 getUsbProfile('TMT20III', '80mm')  // or '58mm'; default: '80mm'
+getNetworkProfile('TMT20III', { host, port?, timeout? }, '80mm')
 ```
 
 The console output does not show Font B or upside-down text. It prints that content as plain text.

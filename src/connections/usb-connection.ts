@@ -1,30 +1,7 @@
-import iconv from 'iconv-lite';
 import * as usb from 'usb';
 
-import {
-  ALIGN_CENTER,
-  ALIGN_LEFT,
-  ALIGN_RIGHT,
-  BOLD_OFF,
-  BOLD_ON,
-  CUT,
-  FEED,
-  FLIP_OFF,
-  FLIP_ON,
-  FONT_A,
-  FONT_B,
-  PARTIAL_CUT,
-  RESET,
-  UNDERLINE_1DOT,
-  UNDERLINE_2DOT,
-  UNDERLINE_OFF,
-} from '../command.js';
 import { NoBulkEndpointError, UsbError } from '../errors.js';
-import { BlankNode, CutNode, FeedNode, LineNode, PartialCutNode, TextNode } from '../receipt.js';
-import { PrinterConnection, TextStyle } from './printer-connection.js';
-
-const ALIGN = { left: ALIGN_LEFT, center: ALIGN_CENTER, right: ALIGN_RIGHT } as const;
-const UNDERLINE = { none: UNDERLINE_OFF, normal: UNDERLINE_1DOT, thick: UNDERLINE_2DOT } as const;
+import { EscPosConnection } from './escpos-connection.js';
 
 // libusb transfer type constant for bulk transfers
 const LIBUSB_TRANSFER_TYPE_BULK = 2;
@@ -34,7 +11,7 @@ const LIBUSB_TRANSFER_TYPE_BULK = 2;
  *
  * Uses the `usb` package for native USB communication.
  */
-export class UsbConnection extends PrinterConnection {
+export class UsbConnection extends EscPosConnection {
   private device: usb.Device;
   private interface: usb.Interface | null = null;
   private endpoint: usb.OutEndpoint | null = null;
@@ -134,55 +111,7 @@ export class UsbConnection extends PrinterConnection {
     return null;
   }
 
-  private encode(text: string): Uint8Array {
-    return iconv.encode(text, 'cp437');
-  }
-
-  protected async visitText(node: TextNode): Promise<void> {
-    await this.write(this.encode(node.value));
-  }
-
-  protected async applyStyle(next: TextStyle, previous: TextStyle): Promise<void> {
-    if (next.bold !== previous.bold) await this.write(next.bold ? BOLD_ON : BOLD_OFF);
-    if (next.underline !== previous.underline) await this.write(UNDERLINE[next.underline]);
-    if (next.fontB !== previous.fontB) await this.write(next.fontB ? FONT_B : FONT_A);
-  }
-
-  protected async visitLine(node: LineNode): Promise<void> {
-    // Alignment and upside-down mode apply to the whole line when it prints,
-    // so set them first and restore the defaults after the line feed.
-    if (node.align !== 'left') await this.write(ALIGN[node.align]);
-    if (node.flip) await this.write(FLIP_ON);
-
-    await this.visit(node.child);
-    await this.write(this.encode('\n'));
-
-    if (node.flip) await this.write(FLIP_OFF);
-    if (node.align !== 'left') await this.write(ALIGN_LEFT);
-  }
-
-  protected async visitBlank(node: BlankNode): Promise<void> {
-    await this.write(this.encode('\n'.repeat(node.count)));
-  }
-
-  protected async visitFeed(_node: FeedNode): Promise<void> {
-    await this.write(FEED);
-  }
-
-  protected async visitCut(_node: CutNode): Promise<void> {
-    await this.write(CUT);
-  }
-
-  protected async visitPartialCut(_node: PartialCutNode): Promise<void> {
-    await this.write(PARTIAL_CUT);
-  }
-
-  protected async reset(): Promise<void> {
-    await this.write(RESET);
-    await this.write(ALIGN_LEFT);
-  }
-
-  private async write(data: Uint8Array): Promise<void> {
+  protected async write(data: Uint8Array): Promise<void> {
     if (!this.endpoint) {
       throw new UsbError('Connection not initialized');
     }

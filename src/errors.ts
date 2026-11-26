@@ -37,3 +37,13 @@ export class UsbError extends EscposError {
     this.name = 'UsbError';
   }
 }
+
+/**
+ * Error during network operations
+ */
+export class NetworkError extends EscposError {
+  constructor(message: string) {
+    super(`Network error: ${message}`);
+    this.name = 'NetworkError';
+  }
+}

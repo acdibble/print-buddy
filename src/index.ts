@@ -1,11 +1,28 @@
+// Errors
+export {
+  EscposError,
+  NetworkError,
+  NoBulkEndpointError,
+  UnsupportedFontError,
+  UsbError,
+} from './errors.js';
+
 // Printer
 export { Printer } from './printer.js';
-export { getUsbProfile, type PaperWidth, type PrinterModel } from './printer-model.js';
+export {
+  getNetworkProfile,
+  getUsbProfile,
+  type PaperWidth,
+  type PrinterModel,
+} from './printer-model.js';
 export {
   type ConsoleConnectionData,
   type ConsoleProfileOptions,
   createConsoleProfile,
+  createNetworkProfile,
   createUsbProfile,
+  type NetworkConnectionData,
+  type NetworkProfileOptions,
   type PrinterProfile,
   type UsbConnectionData,
   type UsbProfileOptions,

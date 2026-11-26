@@ -1,4 +1,9 @@
-import { createUsbProfile, PrinterProfile } from './printer-profile.js';
+import {
+  createNetworkProfile,
+  createUsbProfile,
+  NetworkProfileOptions,
+  PrinterProfile,
+} from './printer-profile.js';
 
 const PRINTER_USB_IDS = {
   TMT20III: {
@@ -42,5 +47,23 @@ export function getUsbProfile(
     vendorId,
     productId,
     columnsPerFont: columnWidths[paperWidth],
+  });
+}
+
+/**
+ * Get a network printer profile for a known printer model
+ *
+ * @param model The printer model
+ * @param address Host plus optional port (default: 9100) and timeout (default: 5000ms)
+ * @param paperWidth Paper width (default: '80mm')
+ */
+export function getNetworkProfile(
+  model: PrinterModel,
+  address: Omit<NetworkProfileOptions, 'columnsPerFont'>,
+  paperWidth: PaperWidth = '80mm',
+): PrinterProfile {
+  return createNetworkProfile({
+    ...address,
+    columnsPerFont: PRINTER_USB_IDS[model].columnWidths[paperWidth],
   });
 }

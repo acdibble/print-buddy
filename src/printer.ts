@@ -1,4 +1,9 @@
-import { ConsoleConnection, PrinterConnection, UsbConnection } from './connections/index.js';
+import {
+  ConsoleConnection,
+  NetworkConnection,
+  PrinterConnection,
+  UsbConnection,
+} from './connections/index.js';
 import { PrinterProfile } from './printer-profile.js';
 import { Receipt } from './receipt.js';
 
@@ -47,6 +52,12 @@ export class Printer {
           return null;
         }
         connection = usbConn;
+        break;
+      }
+
+      case 'network': {
+        const { host, port, timeout } = profile.connectionData;
+        connection = new NetworkConnection(host, port, timeout, fontAWidth);
         break;
       }
 
