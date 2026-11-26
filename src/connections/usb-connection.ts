@@ -114,10 +114,10 @@ export class UsbConnection extends PrinterConnection {
 
     // Get the endpoint object
     const ep = this.interface.endpoint(actualEndpoint);
-    if (!ep || ep.direction !== 'out') {
+    if (!(ep instanceof usb.OutEndpoint)) {
       throw new UsbError(`Endpoint ${String(actualEndpoint)} is not a valid OUT endpoint`);
     }
-    this.endpoint = ep as usb.OutEndpoint;
+    this.endpoint = ep;
   }
 
   /**

@@ -44,21 +44,22 @@
   ],
   "sideEffects": false,
   "dependencies": {
-    "iconv-lite": "^0.6.3",
-    "usb": "^2.11.0"
+    "iconv-lite": "^0.7.3",
+    "usb": "^2.19.2"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.2",
-    "@types/node": "^20.0.0",
-    "eslint": "^9.39.2",
-    "eslint-plugin-simple-import-sort": "^12.1.1",
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.6.11",
+    "@typescript/native": "npm:typescript@^7.0.2",
+    "eslint": "^10.15.0",
+    "eslint-plugin-simple-import-sort": "^14.0.0",
     "husky": "^9.1.7",
-    "lint-staged": "^16.2.7",
-    "prettier": "^3.8.1",
-    "tsx": "^4.21.0",
-    "typescript": "^5.0.0",
-    "typescript-eslint": "^8.54.0",
-    "vitest": "^4.0.18"
+    "lint-staged": "^17.6.2",
+    "prettier": "^3.10.1",
+    "tsx": "^4.23.15",
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
+    "typescript-eslint": "^8.74.0",
+    "vitest": "^5.1.2"
   },
   "engines": {
     "node": ">=24.0.0"

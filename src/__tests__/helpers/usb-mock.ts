@@ -10,7 +10,17 @@ export const writtenBytes: number[] = [];
  * vi.mock('usb', async () => (await import('./helpers/usb-mock.js')).createUsbModule());
  */
 export function createUsbModule() {
+  class OutEndpoint {
+    direction = 'out';
+    timeout = 0;
+    transfer = vi.fn((buffer: Buffer, callback: (err: Error | null) => void) => {
+      writtenBytes.push(...buffer);
+      callback(null);
+    });
+  }
+
   return {
+    OutEndpoint,
     findByIds: vi.fn(() => ({
       open: vi.fn(),
       close: vi.fn(),
@@ -20,14 +30,7 @@ export function createUsbModule() {
         release: vi.fn((_closeEndpoints: boolean, cb: () => void) => {
           cb();
         }),
-        endpoint: vi.fn(() => ({
-          direction: 'out',
-          timeout: 0,
-          transfer: vi.fn((buffer: Buffer, callback: (err: Error | null) => void) => {
-            writtenBytes.push(...buffer);
-            callback(null);
-          }),
-        })),
+        endpoint: vi.fn(() => new OutEndpoint()),
         endpoints: [{ direction: 'out', transferType: 2, address: 1 }],
       })),
     })),

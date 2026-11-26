@@ -1,39 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Receipt, bold, underline } from '../receipt';
 
-// Capture all bytes written to the mock endpoint
-let writtenBytes: number[] = [];
-
-// Mock the usb package
-vi.mock('usb', () => {
-  return {
-    findByIds: vi.fn(() => ({
-      open: vi.fn(),
-      close: vi.fn(),
-      interface: vi.fn(() => ({
-        isKernelDriverActive: vi.fn(() => false),
-        claim: vi.fn(),
-        release: vi.fn(),
-        endpoint: vi.fn(() => ({
-          direction: 'out',
-          timeout: 0,
-          transfer: vi.fn((buffer: Buffer, callback: (err: Error | null) => void) => {
-            writtenBytes.push(...buffer);
-            callback(null);
-          }),
-        })),
-        endpoints: [{ direction: 'out', transferType: 2, address: 1 }],
-      })),
-    })),
-  };
-});
+vi.mock('usb', async () => (await import('./helpers/usb-mock.js')).createUsbModule());
 
 // Import after mocking
 import { UsbConnection } from '../connections/usb-connection';
+import { writtenBytes } from './helpers/usb-mock.js';
 
 describe('UsbConnection', () => {
   beforeEach(() => {
-    writtenBytes = [];
+    writtenBytes.length = 0;
   });
 
   it('renders plain text', async () => {
