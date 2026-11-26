@@ -76,7 +76,7 @@ async function main() {
 
       // Footer
       .line('Thank you for testing!', { align: 'center' })
-      .line(fontB('github.com/example/print-buddy'), { align: 'center' })
+      .line(fontB('github.com/acdibble/print-buddy'), { align: 'center' })
       .blank(2)
       .partialCut();
 
