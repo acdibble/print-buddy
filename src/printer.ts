@@ -13,16 +13,20 @@ import { Receipt } from './receipt.js';
  * The Printer represents a thermal printer connected to the computer.
  * It delegates receipt printing to the underlying connection.
  *
+ * Printers are async disposable: `await using` closes the printer when the
+ * enclosing block exits, even if printing throws.
+ *
  * @example
- * const printer = await Printer.create(createConsoleProfile());
+ * await using printer = await Printer.create(createConsoleProfile());
  *
  * const receipt = new Receipt()
- *   .line(bold(text("Hello World!")))
+ *   .line(bold('Hello World!'))
  *   .cut();
- * await printer.print(receipt);
+ * await printer?.print(receipt);
  */
-export class Printer {
+export class Printer implements AsyncDisposable {
   private connection: PrinterConnection;
+  private closing: Promise<void> | null = null;
 
   private constructor(connection: PrinterConnection) {
     this.connection = connection;
@@ -78,9 +82,17 @@ export class Printer {
   }
 
   /**
-   * Close the printer connection
+   * Close the printer connection. Calling it again does nothing.
    */
   async close(): Promise<void> {
-    await this.connection.close();
+    this.closing ??= this.connection.close();
+    await this.closing;
+  }
+
+  /**
+   * Close the printer at the end of an `await using` block
+   */
+  async [Symbol.asyncDispose](): Promise<void> {
+    await this.close();
   }
 }

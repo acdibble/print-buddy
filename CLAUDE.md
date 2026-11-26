@@ -74,7 +74,8 @@ This is an ESC/POS thermal printer library for TypeScript/Node.js (ESM only).
 **`src/printer.ts`** - Main printer interface
 
 - `Printer.create(profile)` builds the connection; returns `null` if the USB device isn't found (network profiles never return `null`; they connect per job)
-- Delegates `print(receipt)` and `close()` to the connection
+- Delegates `print(receipt)` and `close()` to the connection; `close()` only closes the connection once
+- Implements `AsyncDisposable` (`Symbol.asyncDispose` calls `close()`), so `await using printer = await Printer.create(...)` works; the examples use it
 
 **`src/printer-profile.ts`** - Configuration
 

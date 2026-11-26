@@ -1,7 +1,7 @@
 import { bold, getUsbProfile, Printer, Receipt } from '../src/index.js';
 
 async function main() {
-  const printer = await Printer.create(getUsbProfile('TMT20III'));
+  await using printer = await Printer.create(getUsbProfile('TMT20III'));
   if (!printer) {
     console.error('Printer not found');
     return;
@@ -100,7 +100,6 @@ async function main() {
     .cut();
 
   await printer.print(receipt);
-  await printer.close();
 
   console.log('Printed charset demo');
 }

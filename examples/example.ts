@@ -3,7 +3,7 @@ import { bold, createConsoleProfile, Printer, Receipt, underline } from '../src/
 async function main() {
   // Test with console output (no hardware needed)
   const profile = createConsoleProfile();
-  const printer = await Printer.create(profile);
+  await using printer = await Printer.create(profile);
 
   if (!printer) {
     console.error('Failed to create printer');
@@ -32,7 +32,6 @@ async function main() {
     .cut();
 
   await printer.print(receipt);
-  await printer.close();
 
   console.log('\n=== Test Complete ===');
 }

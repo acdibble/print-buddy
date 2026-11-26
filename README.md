@@ -15,7 +15,7 @@ Requires Node.js 24 or later.
 ```typescript
 import { Printer, createConsoleProfile, Receipt, bold, underline } from 'print-buddy';
 
-const printer = await Printer.create(createConsoleProfile());
+await using printer = await Printer.create(createConsoleProfile());
 
 const receipt = new Receipt()
   .line(bold('COFFEE SHOP'), { align: 'center' })
@@ -36,8 +36,9 @@ const receipt = new Receipt()
   .cut();
 
 await printer.print(receipt);
-await printer.close();
 ```
+
+`Printer` is async disposable, so `await using` closes it when the enclosing block exits, even if printing throws. You can also call `await printer.close()` yourself; closing more than once does nothing.
 
 ## USB Printer
 
