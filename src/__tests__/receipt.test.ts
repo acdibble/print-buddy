@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
-import { Receipt, bold, underline } from '../receipt';
+import { Receipt, bold, underline } from '../receipt.js';
 
 describe(Receipt, () => {
   describe('building', () => {

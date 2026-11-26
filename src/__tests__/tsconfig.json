@@ -1,0 +1,11 @@
+{
+  // Type-checks the tests (the root tsconfig excludes them so they aren't built).
+  // Editors use the nearest tsconfig.json, so test files get these settings.
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "declaration": false
+  },
+  "include": ["./**/*"],
+  "exclude": []
+}

@@ -9,7 +9,7 @@ Uses pnpm and Node.js ≥24 (see `.nvmrc`).
 ```bash
 pnpm install                          # Install dependencies
 pnpm test                             # Run tests (vitest)
-pnpm typecheck                        # Type-check src/ (tsc --noEmit)
+pnpm typecheck                        # Type-check src/ and the tests (tsc)
 pnpm lint                             # Lint src/ (oxlint, type-aware)
 pnpm format                           # Format everything (oxfmt, also sorts imports)
 pnpm build                            # Compile to dist/
@@ -19,7 +19,7 @@ pnpm tsx examples/example-charset.ts  # CP437 character set on USB printer
 ./scripts/release.sh <major|minor|patch>  # Bump version, tag, push
 ```
 
-CI runs typecheck, lint, format check, test and build. The pre-commit hook runs lint-staged (oxlint + oxfmt). `tsconfig.json` only includes `src/`, so examples are not type-checked.
+CI runs typecheck, lint, format check, test and build. The pre-commit hook runs lint-staged (oxlint + oxfmt). `tsconfig.json` only includes `src/` (minus tests), so examples are not type-checked. The tests have their own `src/__tests__/tsconfig.json`, which extends the root one with `noEmit` and is also used by editors.
 
 ## Architecture
 
@@ -95,7 +95,7 @@ This is an ESC/POS thermal printer library for TypeScript/Node.js (ESM only).
 - `src/__tests__/helpers/usb-mock.ts` records bytes; use it with `vi.mock('usb', async () => (await import('./helpers/usb-mock.js')).createUsbModule())`
 - `network-connection.test.ts` runs a local TCP server as a fake printer and checks the bytes match the USB connection's
 - `console-connection.test.ts` captures stdout and replaces ANSI codes with readable tags
-- Tests are excluded from `tsconfig.json` and oxlint (`ignorePatterns` in `.oxlintrc.json`)
+- Tests are excluded from the root `tsconfig.json` (so they aren't built) and from oxlint (`ignorePatterns` in `.oxlintrc.json`). `src/__tests__/tsconfig.json` type-checks them, so test imports need `.js` extensions like the source
 
 ### Adding a Node Type
 

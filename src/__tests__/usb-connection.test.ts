@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import { Receipt, bold, underline } from '../receipt';
+import { Receipt, bold, underline } from '../receipt.js';
 
 vi.mock('usb', async () => (await import('./helpers/usb-mock.js')).createUsbModule());
 
 // Import after mocking
-import { UsbConnection } from '../connections/usb-connection';
+import { UsbConnection } from '../connections/usb-connection.js';
 import { writtenBytes } from './helpers/usb-mock.js';
 
 describe('UsbConnection', () => {
